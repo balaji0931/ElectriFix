@@ -213,6 +213,49 @@ Implementation is expected to follow this specification without introducing arch
 
 ---
 
+# Session 5 — API Specification
+
+## Goal
+
+Produce a complete implementation contract for the backend before writing application code.
+
+The specification defines the public API boundary shared between the backend, frontend, simulator, and future implementation agents.
+
+## Delegated to AI
+
+- Initial endpoint catalogue.
+- Request and response models.
+- WebSocket contract.
+- Error contract.
+- Interaction flow diagrams.
+- Acceptance scenarios.
+- Performance targets.
+
+## Human Review
+
+The API specification underwent multiple review iterations before being frozen.
+
+Major revisions included:
+
+- Added API Invariants.
+- Added Endpoint Ownership Flow.
+- Added Ticket Lifecycle State Machine.
+- Expanded module ownership with Reads, Writes, Events, and Dependencies.
+- Added AI API Principles.
+- Introduced Error Philosophy.
+- Replaced hardcoded operational values with Product Policy references.
+- Added Future Extension Points.
+- Added Cross-Reference Matrix.
+- Added Implementation Checklist.
+
+## Outcome
+
+The API specification became the implementation contract for all backend development.
+
+Future implementation is expected to conform to this specification rather than introducing new API behaviour.
+
+---
+
 # Examples of AI Output That Was Rejected
 
 ## Example 1
@@ -260,6 +303,18 @@ Reason rejected:
 Restoration thresholds are operational policy, not localization behaviour.
 
 Verification responsibility was moved into RestorationVerifier and exposed through VerificationPolicy.
+
+---
+
+## Example 5
+
+The initial API specification focused primarily on endpoint definitions.
+
+Reason rejected:
+
+An API specification should define behavioural contracts, ownership boundaries, lifecycle guarantees, interaction flows, invariants, and implementation expectations—not merely a list of routes.
+
+The document was expanded into a complete engineering contract before implementation.
 
 ---
 
@@ -311,3 +366,5 @@ The highest leverage use of AI was not generating code.
 It was rapidly iterating on architectural ideas while keeping product ownership with the human engineer.
 
 Maintaining documentation before implementation significantly reduced design drift and made implementation decisions easier to validate.
+
+Freezing the Architecture, Database Design, Localization Specification, and API Specification before implementation created stable engineering contracts that future implementation could follow without introducing new architectural decisions.

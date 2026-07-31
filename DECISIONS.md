@@ -312,3 +312,94 @@ Updating evidence in-place.
 ## Why Rejected
 
 Historical reasoning would be lost and debugging incorrect localizations becomes significantly harder.
+
+---
+
+# D-013 — Specification-Driven Implementation
+
+**Status:** Accepted
+
+## Decision
+
+Implementation will follow frozen engineering specifications rather than allowing implementation to define system behaviour.
+
+The following documents are treated as authoritative engineering contracts:
+
+- ARCHITECTURE.md
+- DATABASE-DESIGN.md
+- LOCALIZATION-SPECIFICATION.md
+- API-SPECIFICATION.md
+
+Any architectural or behavioural change must first update the relevant specification before implementation.
+
+## Reason
+
+Separating design from implementation reduces ambiguity, prevents design drift, and allows implementation to be validated against stable engineering contracts.
+
+## Alternatives Considered
+
+Allow implementation to evolve independently and update documentation afterwards.
+
+## Why Rejected
+
+Creates inconsistencies between implementation and documentation, making future maintenance and code reviews significantly harder.
+
+---
+
+# D-014 — Contract-First API Design
+
+**Status:** Accepted
+
+## Decision
+
+Freeze the REST and WebSocket API contract before implementing controllers or frontend integrations.
+
+The API specification defines resource ownership, behavioural contracts, request and response models, error handling, WebSocket events, and interaction flows.
+
+## Reason
+
+The API is the primary boundary between backend, frontend, simulator, and external integrations. A stable contract enables independent implementation while minimizing integration issues.
+
+## Alternatives Considered
+
+Design endpoints incrementally during implementation.
+
+## Why Rejected
+
+Leads to inconsistent contracts, duplicated behaviour, and unnecessary API changes during development.
+
+---
+
+# D-015 — API as an Application Boundary
+
+**Status:** Accepted
+
+## Decision
+
+REST endpoints act only as transport adapters.
+
+Business rules remain inside the Application and Domain layers.
+
+Controllers are responsible only for:
+
+- request validation
+- invoking application use cases
+- formatting responses
+- translating errors
+
+Controllers must never perform localization, ticket workflow, topology reasoning, or business decisions directly.
+
+## Reason
+
+Preserves the layered architecture and ensures business logic remains framework-independent and testable.
+
+## Alternatives Considered
+
+Embedding business logic inside controllers.
+
+## Why Rejected
+
+Increases coupling between transport and domain logic, reduces reusability, and makes testing more difficult.
+
+---
+
