@@ -403,3 +403,40 @@ Increases coupling between transport and domain logic, reduces reusability, and 
 
 ---
 
+# D-016 — Phase-Based Implementation Contracts
+
+**Status:** Accepted
+
+## Decision
+
+Implementation will follow a dependency-driven execution plan defined in `IMPLEMENTATION-PLAN.md`.
+
+Each phase represents a bounded engineering increment with its own:
+
+- scope
+- dependencies
+- acceptance criteria
+- testing requirements
+- documentation updates
+- suggested commit boundaries
+- definition of done
+
+A subsequent phase must not begin until the current phase satisfies its completion criteria or an explicit exception is recorded in `DECISIONS.md`.
+
+## Reason
+
+The project is intentionally developed incrementally rather than feature-by-feature.
+
+A phased implementation plan ensures architecture, implementation, testing, documentation, and commit history evolve together, making the project reproducible and allowing another engineer or AI implementation agent to continue development without additional architectural decisions.
+
+## Alternatives Considered
+
+Implement features opportunistically as development progresses.
+
+Maintain a lightweight task list or sprint board.
+
+## Why Rejected
+
+Neither approach captures implementation dependencies, engineering checkpoints, or documentation responsibilities.
+
+The assignment evaluates engineering process in addition to implementation, making a structured execution plan more appropriate.

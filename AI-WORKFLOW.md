@@ -318,6 +318,44 @@ The document was expanded into a complete engineering contract before implementa
 
 ---
 
+# Session 6 — Implementation Planning
+
+## Goal
+
+Transform the frozen specifications into an executable engineering roadmap that another implementation agent can follow without introducing new architectural decisions.
+
+## Delegated to AI
+
+- Initial phase decomposition.
+- Dependency graph.
+- Suggested implementation order.
+- Phase acceptance criteria.
+- Testing milestones.
+- Documentation milestones.
+- Commit strategy.
+
+## Human Review
+
+The implementation plan was extensively reviewed before being frozen.
+
+Major revisions included:
+
+- Reorganized work into dependency-driven phases.
+- Added explicit phase completion criteria.
+- Added testing requirements for every phase.
+- Added documentation update requirements for every phase.
+- Added implementation risks and future-phase notes.
+- Added suggested commit boundaries.
+- Ensured every phase references the frozen engineering specifications instead of redefining behaviour.
+
+## Outcome
+
+`IMPLEMENTATION-PLAN.md` became the execution contract for the remainder of the project.
+
+Future implementation follows this plan rather than deciding implementation order during development.
+
+---
+
 # AI Usage Principles
 
 The following responsibilities were intentionally kept human-owned:
