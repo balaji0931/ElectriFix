@@ -224,3 +224,91 @@ Avoid unnecessary factories, repository hierarchies and generic abstractions.
 The assignment values judgement over enterprise complexity.
 
 The architecture should remain easy to understand within the scope of the exercise.
+
+---
+
+# D-010 — Stateful Processing, Stateless Localization
+
+**Status:** Accepted
+
+## Decision
+
+Separate network state management from fault localization.
+
+`PoleStateService` owns the latest known network state.
+
+`FaultLocalizationEngine` remains completely stateless and operates only on a snapshot of current pole states and resolved topology.
+
+## Reason
+
+Keeping localization stateless makes it deterministic, repeatable and easy to test while allowing state management to evolve independently.
+
+## Alternatives Considered
+
+Allow the localization engine to maintain its own internal state.
+
+## Why Rejected
+
+Mixed responsibilities, reduced testability and made deterministic behaviour harder to guarantee.
+
+---
+
+# D-011 — Rule-Based Confidence Evaluation
+
+**Status:** Accepted
+
+## Decision
+
+Confidence is evaluated using deterministic rules rather than percentages or heuristics embedded inside the algorithm.
+
+Each rule documents:
+
+- condition
+- effect
+- operator-facing reason
+
+The final confidence is expressed as:
+
+- HIGH
+- MEDIUM
+- LOW
+
+## Reason
+
+Operators should understand why confidence changed, and engineers should be able to reproduce the same result from the same inputs.
+
+## Alternatives Considered
+
+Weighted confidence scores.
+
+Machine-learning confidence estimation.
+
+## Why Rejected
+
+Less explainable and harder to validate during implementation.
+
+---
+
+# D-012 — Immutable Fault Evidence
+
+**Status:** Accepted
+
+## Decision
+
+FaultEvidence represents the reasoning available when a fault was localized.
+
+After creation it is immutable.
+
+Subsequent telemetry creates new localization results rather than modifying historical reasoning.
+
+## Reason
+
+Preserves auditability and allows operators to understand exactly what information produced a localization decision.
+
+## Alternatives Considered
+
+Updating evidence in-place.
+
+## Why Rejected
+
+Historical reasoning would be lost and debugging incorrect localizations becomes significantly harder.

@@ -173,6 +173,46 @@ The database model was frozen before ORM implementation.
 
 ---
 
+# Session 4 — Fault Localization Specification
+
+## Goal
+
+Produce a complete engineering specification for the core business capability before implementation.
+
+## Delegated to AI
+
+- Initial specification structure
+- Event flow
+- Acceptance scenarios
+- Failure scenarios
+- Confidence model draft
+- Restoration workflow draft
+
+## Human Review
+
+The specification underwent multiple engineering reviews before being frozen.
+
+Major revisions included:
+
+- Introduced configurable Product Policies.
+- Added explicit Non Goals.
+- Added Engine Invariants.
+- Added deterministic confidence rules.
+- Made FaultEvidence immutable.
+- Separated VerificationPolicy from localization.
+- Added localization trigger matrix.
+- Added determinism and idempotency guarantees.
+- Expanded acceptance scenarios.
+- Clarified ownership boundaries.
+
+## Outcome
+
+The localization specification became the implementation contract for the coding assistant.
+
+Implementation is expected to follow this specification without introducing architectural decisions.
+
+---
+
 # Examples of AI Output That Was Rejected
 
 ## Example 1
@@ -208,6 +248,18 @@ Reason rejected:
 Created circular ownership.
 
 Replaced with one-way ownership using tickets.fault_id.
+
+---
+
+## Example 4
+
+The initial localization specification mixed restoration policy with localization logic.
+
+Reason rejected:
+
+Restoration thresholds are operational policy, not localization behaviour.
+
+Verification responsibility was moved into RestorationVerifier and exposed through VerificationPolicy.
 
 ---
 
