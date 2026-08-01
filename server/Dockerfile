@@ -1,11 +1,12 @@
 FROM node:24-alpine
 
-WORKDIR /app
+WORKDIR /app/server
 
-COPY package*.json ./
+COPY server/package*.json ./
 RUN npm ci
 
-COPY . .
+COPY server .
+COPY data /app/data
 
 EXPOSE 3001
 

@@ -150,7 +150,7 @@ The engine receives a snapshot of current pole states for all poles under the af
 | `energized` | enum | `LIVE`, `DARK`, `PRESUMED_DARK`, `UNKNOWN`. Already set by PoleStateService. |
 | `last_heartbeat_at` | timestamp \| null | Null if never heard from. |
 | `firmware_version` | string \| null | Determines behavior (fw 1.2 = no `power_lost`). |
-| `device_health` | enum | `HEALTHY`, `OFFLINE`, `DEGRADED`. |
+| `device_health` | enum | `NO_DEVICE`, `HEALTHY`, `OFFLINE`, `DEGRADED`. `NO_DEVICE` means no telemetry hardware is installed. |
 | `has_device` | boolean | `false` for ~9% of poles. |
 
 **Key assumptions:**
@@ -1268,4 +1268,3 @@ The 120-second budget exists primarily for the Debouncer — waiting for ≥2 mi
 No open design questions.
 
 All design decisions are resolved in [ARCHITECTURE.md](ARCHITECTURE.md) and [DATABASE-DESIGN.md](DATABASE-DESIGN.md). The specification above is implementable without additional architectural clarification.
-

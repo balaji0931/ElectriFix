@@ -180,7 +180,7 @@
 | `last_event_at` | timestamp | YES | Most recent event of any type |
 | `last_seq` | integer | YES | Last processed sequence number. Used for dedup/ordering. |
 | `firmware_version` | text | YES | Current firmware. Determines behavior (fw 1.2 = silent death). |
-| `device_health` | text | NO | `HEALTHY`, `OFFLINE`, `DEGRADED` |
+| `device_health` | text | NO | `NO_DEVICE`, `HEALTHY`, `OFFLINE`, `DEGRADED`. `NO_DEVICE` means no telemetry hardware is installed. |
 | `has_device` | boolean | NO | Whether a telemetry device is fitted. Copied from `poles.device_id IS NOT NULL` at seed time. |
 | `battery_mv` | integer | YES | Last reported capacitor voltage |
 | `rssi` | integer | YES | Last reported signal strength |
@@ -500,7 +500,7 @@ erDiagram
 |-------|-----------|------|---------|
 | `telemetry_events` | `ck_event_type` | `event IN ('heartbeat', 'power_lost', 'power_restored', 'boot')` | Matches assignment's defined event types |
 | `pole_states` | `ck_energized_status` | `energized IN ('LIVE', 'DARK', 'PRESUMED_DARK', 'UNKNOWN')` | Matches architecture's PoleState enum |
-| `pole_states` | `ck_device_health` | `device_health IN ('HEALTHY', 'OFFLINE', 'DEGRADED')` | Matches architecture's DeviceHealth enum |
+| `pole_states` | `ck_device_health` | `device_health IN ('NO_DEVICE', 'HEALTHY', 'OFFLINE', 'DEGRADED')` | Matches architecture's DeviceHealth enum |
 | `faults` | `ck_fault_type` | `fault_type IN ('span', 'dt', 'feeder')` | Matches assignment's fault types |
 | `faults` | `ck_fault_status` | `status IN ('active', 'resolved', 'merged')` | Fault lifecycle |
 | `faults` | `ck_confidence` | `confidence_level IN ('HIGH', 'MEDIUM', 'LOW')` | Matches architecture's confidence levels |

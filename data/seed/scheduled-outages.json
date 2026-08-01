@@ -1,0 +1,17 @@
+[
+  { "outage_id": "SO-001", "scope": "dt", "target_id": "D-0001", "start_offset_minutes": -180, "end_offset_minutes": -60, "reason": "Completed transformer inspection" },
+  { "outage_id": "SO-002", "scope": "feeder", "target_id": "F-07-01", "start_offset_minutes": -120, "end_offset_minutes": -30, "reason": "Completed feeder patrol" },
+  { "outage_id": "SO-003", "scope": "dt", "target_id": "D-0007", "start_offset_minutes": -15, "end_offset_minutes": 45, "reason": "Active jumper replacement" },
+  { "outage_id": "SO-004", "scope": "feeder", "target_id": "F-07-02", "start_offset_minutes": -10, "end_offset_minutes": 50, "reason": "Active vegetation clearance" },
+  { "outage_id": "SO-005", "scope": "dt", "target_id": "D-0015", "start_offset_minutes": 60, "end_offset_minutes": 120, "reason": "Upcoming meter-panel maintenance" },
+  { "outage_id": "SO-006", "scope": "dt", "target_id": "D-0021", "start_offset_minutes": 90, "end_offset_minutes": 180, "reason": "Upcoming fuse replacement" },
+  { "outage_id": "SO-007", "scope": "feeder", "target_id": "F-07-03", "start_offset_minutes": 180, "end_offset_minutes": 300, "reason": "Planned feeder sectionalizing" },
+  { "outage_id": "SO-008", "scope": "dt", "target_id": "D-0030", "start_offset_minutes": 240, "end_offset_minutes": 360, "reason": "Planned transformer servicing" },
+  { "outage_id": "SO-009", "scope": "dt", "target_id": "D-0038", "start_offset_minutes": 1440, "end_offset_minutes": 1560, "reason": "Tomorrow maintenance window" },
+  { "outage_id": "SO-010", "scope": "feeder", "target_id": "F-07-04", "start_offset_minutes": 1500, "end_offset_minutes": 1620, "reason": "Tomorrow feeder inspection" },
+  { "outage_id": "SO-011", "scope": "dt", "target_id": "D-0045", "start_offset_minutes": 2880, "end_offset_minutes": 3000, "reason": "Future capacitor-bank inspection" },
+  { "outage_id": "SO-012", "scope": "dt", "target_id": "D-0052", "start_offset_minutes": 4320, "end_offset_minutes": 4440, "reason": "Future transformer maintenance" },
+  { "outage_id": "SO-013", "scope": "feeder", "target_id": "F-07-05", "start_offset_minutes": 5760, "end_offset_minutes": 5880, "reason": "Next-week feeder maintenance" },
+  { "outage_id": "SO-014", "scope": "dt", "target_id": "D-0058", "start_offset_minutes": 7200, "end_offset_minutes": 7320, "reason": "Next-week load balancing" },
+  { "outage_id": "SO-015", "scope": "dt", "target_id": "D-0060", "start_offset_minutes": 10080, "end_offset_minutes": 10200, "reason": "Future planned maintenance" }
+]

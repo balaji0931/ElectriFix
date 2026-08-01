@@ -504,7 +504,7 @@ graph TB
 | `last_event_at` | Timestamp of most recent event of any type |
 | `last_seq` | Last processed sequence number (for dedup and ordering) |
 | `firmware_version` | Device firmware (determines behavior — fw 1.2 doesn't send `power_lost`) |
-| `device_health` | `HEALTHY` / `OFFLINE` / `DEGRADED` (based on heartbeat regularity and RSSI) |
+| `device_health` | `NO_DEVICE` / `HEALTHY` / `OFFLINE` / `DEGRADED`. `NO_DEVICE` denotes no installed telemetry hardware; other states apply to installed devices and are based on heartbeat regularity and RSSI. |
 | `has_device` | Whether a telemetry device is fitted on this pole |
 
 #### `domain/noise-filter`

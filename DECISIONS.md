@@ -466,3 +466,47 @@ UUIDv7 improves index locality for append-heavy inserts. Registry deletion must 
 ## Why Rejected
 
 UUIDv4 loses time ordering. A nullable telemetry pole reference conflicts with the immutable registry model. A persisted activity flag introduces synchronization and ownership ambiguity before a scheduler exists.
+
+---
+
+# D-018 — Relative-Time Seed Data
+
+**Status:** Accepted
+
+## Decision
+
+Synthetic scheduled outages use timestamps relative to the seed execution time rather than fixed historical dates. Idempotent upserts retain deterministic outage IDs while refreshing their windows on each seed run.
+
+## Reason
+
+Fresh deployments retain finished, active, upcoming, and future outage examples, keeping runtime-derived outage activity meaningful for reviewers and later suppression, simulator, and dashboard phases.
+
+## Alternatives Considered
+
+Fixed timestamps from the assignment scenario.
+
+## Why Rejected
+
+Over time, fixed outage windows become entirely historical and reduce the usefulness of the seeded environment.
+
+---
+
+# D-019 — Separate Device Presence from Device Health
+
+**Status:** Accepted
+
+## Decision
+
+The `device_health` enum includes `NO_DEVICE` to distinguish poles without installed telemetry devices from poles whose installed devices are offline. Seeded device-less poles use `NO_DEVICE`; seeded poles with a device use `HEALTHY`.
+
+## Reason
+
+Device presence and device health are separate operational concepts. A pole without installed hardware is not experiencing a communication failure.
+
+## Alternatives Considered
+
+Treat poles without devices as `OFFLINE`.
+
+## Why Rejected
+
+This conflates hardware absence with hardware failure and would complicate telemetry processing, operator reasoning, and future device-health monitoring.

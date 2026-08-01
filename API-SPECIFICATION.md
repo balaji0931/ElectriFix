@@ -1388,7 +1388,7 @@ A lightweight fault summary — no evidence. Used when the full evidence isn't n
   "feeder_id": "F-07-03",
   "energized": "LIVE" | "DARK" | "PRESUMED_DARK" | "UNKNOWN",
   "has_device": true,
-  "device_health": "HEALTHY" | "OFFLINE" | "DEGRADED",
+  "device_health": "NO_DEVICE" | "HEALTHY" | "OFFLINE" | "DEGRADED",
   "last_heartbeat_at": "ISO 8601" | null,
   "firmware_version": "1.4.2" | null
 }

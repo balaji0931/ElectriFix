@@ -9,10 +9,14 @@
     "lint": "eslint .",
     "format": "prettier --check .",
     "format:write": "prettier --write .",
-    "test": "vitest run"
+    "test": "vitest run",
+    "db:generate": "drizzle-kit generate",
+    "db:migrate": "tsx src/infrastructure/db/migrate.ts",
+    "db:seed": "tsx src/infrastructure/db/seed.ts"
   },
   "dependencies": {
     "dotenv": "latest",
+    "drizzle-orm": "^0.45.2",
     "express": "latest",
     "pg": "latest",
     "pino": "latest",
@@ -24,6 +28,7 @@
     "@types/node": "latest",
     "@types/pg": "latest",
     "@types/supertest": "latest",
+    "drizzle-kit": "^0.31.10",
     "eslint": "latest",
     "globals": "latest",
     "prettier": "latest",

@@ -15,7 +15,8 @@ services:
 
   server:
     build:
-      context: ./server
+      context: .
+      dockerfile: server/Dockerfile
     environment:
       APP_VERSION: ${APP_VERSION:-1.0.0}
       DATABASE_URL: postgresql://${POSTGRES_USER:-electrifix}:${POSTGRES_PASSWORD:-electrifix}@db:5432/${POSTGRES_DB:-electrifix}

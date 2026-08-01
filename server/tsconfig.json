@@ -8,5 +8,11 @@
     "skipLibCheck": true,
     "noEmit": true
   },
-  "include": ["src", "test", "eslint.config.js", "vitest.config.ts"]
+  "include": [
+    "src",
+    "test",
+    "drizzle.config.ts",
+    "eslint.config.js",
+    "vitest.config.ts"
+  ]
 }

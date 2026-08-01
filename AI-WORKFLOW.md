@@ -256,6 +256,91 @@ Future implementation is expected to conform to this specification rather than i
 
 ---
 
+# Session 6 — Implementation Planning
+
+## Goal
+
+Transform the frozen specifications into an executable engineering roadmap that another implementation agent can follow without introducing new architectural decisions.
+
+## Delegated to AI
+
+- Initial phase decomposition.
+- Dependency graph.
+- Suggested implementation order.
+- Phase acceptance criteria.
+- Testing milestones.
+- Documentation milestones.
+- Commit strategy.
+
+## Human Review
+
+The implementation plan was extensively reviewed before being frozen.
+
+Major revisions included:
+
+- Reorganized work into dependency-driven phases.
+- Added explicit phase completion criteria.
+- Added testing requirements for every phase.
+- Added documentation update requirements for every phase.
+- Added implementation risks and future-phase notes.
+- Added suggested commit boundaries.
+- Ensured every phase references the frozen engineering specifications instead of redefining behaviour.
+
+## Outcome
+
+`IMPLEMENTATION-PLAN.md` became the execution contract for the remainder of the project.
+
+Future implementation follows this plan rather than deciding implementation order during development.
+
+---
+
+# Session 7 — Database Implementation
+
+## Goal
+
+Implement the frozen database specification exactly as documented without introducing architectural drift or undocumented schema changes.
+
+## Delegated to AI
+
+- Drizzle schema implementation.
+- Migration generation.
+- Database startup hook.
+- Idempotent seed generator.
+- Seed dataset generation.
+- Database integration tests.
+- Seed-shape and constraint tests.
+
+## Human Review
+
+Implementation paused multiple times because the frozen specifications contained ambiguities that affected the schema.
+
+Instead of making assumptions, implementation stopped until each issue was reviewed and resolved.
+
+The following engineering decisions were explicitly approved before implementation:
+
+- Standardized UUID generation on UUIDv7.
+- Changed telemetry foreign key deletion behavior to `ON DELETE RESTRICT`.
+- Made scheduled outage activity runtime-derived rather than persisted.
+- Adopted relative-time outage windows for seeded data.
+- Distinguished `NO_DEVICE` from `OFFLINE` for device health.
+
+The completed implementation was manually verified using Docker Compose, PostgreSQL inspection, migration verification, and seeded row-count validation.
+
+## Outcome
+
+Phase 1 produced a fully reproducible database foundation consisting of:
+
+- Complete Drizzle schema.
+- Automatic migrations.
+- Idempotent startup seeding.
+- Realistic subdivision dataset.
+- PostgreSQL integration tests.
+- Seed validation tests.
+
+The implementation remained fully aligned with the frozen architecture and database specifications before any domain behavior was introduced.
+
+---
+
 # Examples of AI Output That Was Rejected
 
 ## Example 1
@@ -318,41 +403,15 @@ The document was expanded into a complete engineering contract before implementa
 
 ---
 
-# Session 6 — Implementation Planning
+## Example 6
 
-## Goal
+The initial seed proposal represented poles without installed telemetry hardware as `OFFLINE`.
 
-Transform the frozen specifications into an executable engineering roadmap that another implementation agent can follow without introducing new architectural decisions.
+### Reason Rejected
 
-## Delegated to AI
+A pole without a telemetry device is fundamentally different from a pole with an installed device that has stopped communicating.
 
-- Initial phase decomposition.
-- Dependency graph.
-- Suggested implementation order.
-- Phase acceptance criteria.
-- Testing milestones.
-- Documentation milestones.
-- Commit strategy.
-
-## Human Review
-
-The implementation plan was extensively reviewed before being frozen.
-
-Major revisions included:
-
-- Reorganized work into dependency-driven phases.
-- Added explicit phase completion criteria.
-- Added testing requirements for every phase.
-- Added documentation update requirements for every phase.
-- Added implementation risks and future-phase notes.
-- Added suggested commit boundaries.
-- Ensured every phase references the frozen engineering specifications instead of redefining behaviour.
-
-## Outcome
-
-`IMPLEMENTATION-PLAN.md` became the execution contract for the remainder of the project.
-
-Future implementation follows this plan rather than deciding implementation order during development.
+The domain model was revised to introduce a distinct `NO_DEVICE` device-health state, preserving the semantic distinction between hardware absence and hardware failure.
 
 ---
 
@@ -406,3 +465,5 @@ It was rapidly iterating on architectural ideas while keeping product ownership 
 Maintaining documentation before implementation significantly reduced design drift and made implementation decisions easier to validate.
 
 Freezing the Architecture, Database Design, Localization Specification, and API Specification before implementation created stable engineering contracts that future implementation could follow without introducing new architectural decisions.
+
+Freezing engineering specifications before implementation significantly reduced implementation ambiguity. Whenever the implementation encountered conflicting or incomplete specifications, development paused until the engineering decision was reviewed and documented rather than allowing assumptions to enter the codebase.
