@@ -341,6 +341,46 @@ The implementation remained fully aligned with the frozen architecture and datab
 
 ---
 
+# Session 8 — Shared Contracts and Policies
+
+## Goal
+
+Implement the canonical shared domain contracts, centralized runtime policies, validation models, and reusable fixtures before introducing domain behavior.
+
+## Delegated to AI
+
+- Shared domain contracts.
+- Canonical enums.
+- FaultEvidence contract.
+- Product policy module.
+- Zod validation schemas.
+- Topology fixtures.
+- Contract and fixture tests.
+
+## Human Review
+
+Implementation paused to resolve specification ambiguities before introducing shared contracts.
+
+The implementation was reviewed to ensure:
+
+- every documented enum exists exactly once
+- FaultEvidence matches the Localization, Database, and API specifications
+- policy values remain centralized
+- simulator options remain intentionally opaque
+- topology contracts remain representation-only rather than algorithmic
+
+During review, several convenience names were rejected because they drifted from the frozen specifications.
+
+The implementation was revised to use the documented vocabulary exactly.
+
+## Outcome
+
+Phase 2 established the shared language of the system.
+
+Future phases are expected to import these canonical contracts rather than defining local equivalents.
+
+---
+
 # Examples of AI Output That Was Rejected
 
 ## Example 1
@@ -412,6 +452,20 @@ The initial seed proposal represented poles without installed telemetry hardware
 A pole without a telemetry device is fundamentally different from a pole with an installed device that has stopped communicating.
 
 The domain model was revised to introduce a distinct `NO_DEVICE` device-health state, preserving the semantic distinction between hardware absence and hardware failure.
+
+---
+
+## Example 7
+
+The initial implementation introduced convenience enum values and contract field names that differed from the frozen specifications.
+
+### Reason Rejected
+
+Shared contracts represent the canonical language of the system.
+
+Even small naming differences would introduce drift between the Architecture, Database Design, Localization Specification, API Specification, and implementation.
+
+The implementation was revised to use the documented vocabulary exactly.
 
 ---
 
