@@ -292,7 +292,6 @@
 | `scheduled_start` | timestamp | NO | Planned start time |
 | `scheduled_end` | timestamp | NO | Planned end time |
 | `reason` | text | YES | E.g., "Planned maintenance - jumper replacement" |
-| `is_active` | boolean | NO | Whether currently in effect. Computed from time window. |
 | `created_at` | timestamp | NO | Row creation time |
 
 **Ownership:**
@@ -421,7 +420,6 @@ erDiagram
         timestamp scheduled_start
         timestamp scheduled_end
         text reason
-        boolean is_active
         timestamp created_at
     }
 
@@ -480,7 +478,7 @@ erDiagram
 |------|---------------|-----------|
 | **Registry → Registry** (feeders ↔ DTs ↔ poles) | **Enforced.** `ON DELETE RESTRICT`. | Static data loaded at seed time. Referential integrity must hold. A pole cannot exist without its DT and feeder. |
 | **State → Registry** (pole_states → poles) | **Enforced.** `ON DELETE CASCADE`. | 1:1 relationship. If a pole is removed (re-seed), its state goes with it. |
-| **Telemetry → Registry** (telemetry_events → poles) | **Enforced but pragmatic.** `ON DELETE SET NULL` on `pole_id`. | At 39 msg/s, FK checks add overhead. However, at this scale (single subdivision), it's negligible. If scaling to 30 subdivisions, consider dropping this FK and validating in `EventPipeline`. |
+| **Telemetry → Registry** (telemetry_events → poles) | **Enforced.** `ON DELETE RESTRICT` on `pole_id`. | Telemetry belongs to an immutable registry pole. Accidental pole deletion must fail rather than rewriting telemetry history. |
 | **Operational → Registry** (faults → DTs, faults → poles) | **Enforced.** `ON DELETE RESTRICT`. | Faults reference real network assets. Integrity must hold. |
 | **Operational → Operational** (tickets → faults) | **Enforced.** `ON DELETE RESTRICT`. | A ticket cannot exist without its fault. FK only on `tickets.fault_id` — faults do not reference tickets. |
 | **Self-referential** (poles → poles, faults → faults) | **Enforced.** `ON DELETE SET NULL`. | Parent pole deletion or fault merge target deletion should not cascade — just NULL the reference. |

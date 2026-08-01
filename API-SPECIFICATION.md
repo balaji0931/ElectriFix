@@ -89,9 +89,9 @@ All timestamps are **ISO 8601 UTC** strings: `"2026-07-29T02:14:07.412Z"`.
 | Entity | ID Type | Generation |
 |--------|---------|-----------|
 | Poles, DTs, Feeders, Outages | Natural text key | From registry/feed (`P-024431`, `D-0112`, `F-07-03`, `SO-...`) |
-| Telemetry Events | UUID v4 | Server-generated on ingest |
-| Faults | UUID v4 | Server-generated on creation |
-| Tickets | UUID v4 | Server-generated on creation |
+| Telemetry Events | UUID v7 | Server-generated on ingest |
+| Faults | UUID v7 | Server-generated on creation |
+| Tickets | UUID v7 | Server-generated on creation |
 
 ### Pagination
 

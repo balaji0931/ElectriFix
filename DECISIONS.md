@@ -440,3 +440,29 @@ Maintain a lightweight task list or sprint board.
 Neither approach captures implementation dependencies, engineering checkpoints, or documentation responsibilities.
 
 The assignment evaluates engineering process in addition to implementation, making a structured execution plan more appropriate.
+
+---
+
+# D-017 — Immutable Registry and Runtime-Derived Operational State
+
+**Status:** Accepted
+
+## Decision
+
+- Standardize generated telemetry, fault, and ticket identifiers on UUIDv7. UUID generation occurs in the application layer; PostgreSQL native generation is not required.
+- Treat registry entities as immutable master data. `telemetry_events.pole_id` remains non-null and its foreign key uses `ON DELETE RESTRICT`.
+- Do not persist time-dependent outage activity. `scheduled_outages.is_active` is derived at runtime from `scheduled_start <= current_time <= scheduled_end`. API responses may expose it as a computed field.
+
+## Reason
+
+UUIDv7 improves index locality for append-heavy inserts. Registry deletion must fail rather than silently rewriting telemetry history. Runtime-derived outage activity remains correct without a scheduler or stale stored state.
+
+## Alternatives Considered
+
+- UUIDv4 for generated identifiers.
+- `ON DELETE SET NULL` for telemetry pole references.
+- A stored outage activity flag maintained by a scheduled update process.
+
+## Why Rejected
+
+UUIDv4 loses time ordering. A nullable telemetry pole reference conflicts with the immutable registry model. A persisted activity flag introduces synchronization and ownership ambiguity before a scheduler exists.
