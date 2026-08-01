@@ -1,1 +1,6 @@
 /assignmentDocs
+**/node_modules/
+**/dist/
+**/coverage/
+**/*.tsbuildinfo
+.env
