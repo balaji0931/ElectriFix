@@ -1,18 +1,37 @@
 import { eq } from "drizzle-orm";
 
+import type {
+  DeviceHealthStatus,
+  EnergizedState,
+} from "../../domain/contracts.js";
 import type { Database } from "../db/client.js";
 import { poleStates } from "../db/schema.js";
 
-export type PoleStatePersistenceModel = typeof poleStates.$inferSelect;
+export type PoleStatePersistenceModel = Omit<
+  typeof poleStates.$inferSelect,
+  "energized" | "deviceHealth"
+> & {
+  energized: EnergizedState;
+  deviceHealth: DeviceHealthStatus;
+};
 export type PoleStatePersistenceUpdate = Partial<
-  Omit<typeof poleStates.$inferInsert, "poleId">
+  Omit<
+    typeof poleStates.$inferInsert,
+    "poleId" | "energized" | "deviceHealth"
+  > & {
+    energized: EnergizedState;
+    deviceHealth: DeviceHealthStatus;
+  }
 >;
 
 export class PoleRepository {
   constructor(private readonly db: Database) {}
 
   listPoleStates(): Promise<PoleStatePersistenceModel[]> {
-    return this.db.select().from(poleStates);
+    return this.db
+      .select()
+      .from(poleStates)
+      .then((states) => states as PoleStatePersistenceModel[]);
   }
 
   async findPoleState(
@@ -22,7 +41,7 @@ export class PoleRepository {
       .select()
       .from(poleStates)
       .where(eq(poleStates.poleId, poleId));
-    return state;
+    return state as PoleStatePersistenceModel | undefined;
   }
 
   async updatePoleState(
@@ -35,6 +54,6 @@ export class PoleRepository {
       .where(eq(poleStates.poleId, poleId))
       .returning();
 
-    return state;
+    return state as PoleStatePersistenceModel | undefined;
   }
 }

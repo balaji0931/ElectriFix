@@ -461,6 +461,43 @@ Phase 4 established the topology abstraction that future localization will consu
 
 ---
 
+# Session 11 — Pole State Service
+
+## Goal
+
+Implement the single owner of current network state while preserving the architectural separation between state management, telemetry processing, and localization.
+
+## Delegated to AI
+
+- PoleStateService implementation.
+- Startup cache rebuild.
+- State persistence.
+- Transition publication.
+- Unit and integration tests.
+
+## Human Review
+
+Implementation paused before development to clarify:
+
+- cache/persistence ordering
+- boot sequence handling
+- device health ownership
+- transition publication interface
+
+The implementation was reviewed to ensure:
+
+- PoleStateService remains the sole owner of mutable pole state
+- persistence occurs before cache mutation
+- duplicate state transitions are suppressed
+- health policy remains outside this phase
+- downstream behavior is not invoked
+
+## Outcome
+
+Phase 5 established the runtime state owner that future EventPipeline and FaultLocalizationEngine phases will consume.
+
+---
+
 # Examples of AI Output That Was Rejected
 
 ## Example 1
@@ -558,6 +595,32 @@ The initial repository proposal introduced generic repository abstractions and g
 The architecture intentionally favors explicit, ownership-oriented repositories over generic abstractions.
 
 Repository responsibilities were reduced to infrastructure persistence only, and startup data was exposed through dependency injection rather than global state.
+
+---
+
+## Example 9
+
+The initial implementation considered introducing inferred topology heuristics and additional quality metadata.
+
+### Reason Rejected
+
+The frozen architecture explicitly defers inferred topology.
+
+Implementing heuristic reconstruction would introduce undocumented product behavior and architectural decisions.
+
+The implementation was limited to recorded and fallback topology only.
+
+---
+
+## Example 10
+
+The initial implementation considered updating device health from heartbeat events and introducing framework-specific event publication.
+
+### Reason Rejected
+
+Device health transitions belong to later policy phases.
+
+Transition publication remains a framework-independent in-process contract so future layers can subscribe without introducing transport or infrastructure coupling.
 
 ---
 
