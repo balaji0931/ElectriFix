@@ -424,6 +424,43 @@ Future application use cases will orchestrate these repositories without directl
 
 ---
 
+# Session 10 — Topology Resolution
+
+## Goal
+
+Implement the topology abstraction that allows future localization to operate independently of how network topology is obtained.
+
+## Delegated to AI
+
+- NetworkGraph implementation.
+- TopologyResolver abstraction.
+- Recorded topology validation.
+- Fallback topology.
+- Immutable graph cache.
+- Traversal tests.
+
+## Human Review
+
+Implementation paused before development to resolve:
+
+- resolver input
+- graph root representation
+- topology metadata
+
+The implementation was reviewed to ensure:
+
+- graphs remain immutable
+- recorded topology is validated rather than repaired
+- fallback topology never invents pole-to-pole relationships
+- inferred topology remains intentionally deferred
+- localization behavior is not introduced into the topology layer
+
+## Outcome
+
+Phase 4 established the topology abstraction that future localization will consume without depending on repositories or registry structure.
+
+---
+
 # Examples of AI Output That Was Rejected
 
 ## Example 1
