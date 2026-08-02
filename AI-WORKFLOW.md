@@ -381,6 +381,47 @@ Future phases are expected to import these canonical contracts rather than defin
 
 ---
 
+# Session 9 — Repository Adapters and Startup Bootstrap
+
+## Goal
+
+Implement lean persistence adapters and startup loading while preserving the ownership boundaries defined by the architecture.
+
+## Delegated to AI
+
+- Drizzle connection management.
+- Repository adapters.
+- Bootstrap loading.
+- Transaction helper.
+- Repository integration tests.
+- Bootstrap validation tests.
+
+## Human Review
+
+Implementation paused before development to clarify:
+
+- startup validation scope
+- dependency injection strategy
+- transaction ownership
+
+The implementation was reviewed to ensure:
+
+- repositories remain infrastructure only
+- registry data remains immutable
+- business logic does not enter repositories
+- startup validates structural integrity rather than seed counts
+- transaction support remains persistence-only
+
+Generic repository abstractions and global startup state were intentionally rejected.
+
+## Outcome
+
+Phase 3 established the persistence boundary for the application.
+
+Future application use cases will orchestrate these repositories without directly depending on Drizzle or database infrastructure.
+
+---
+
 # Examples of AI Output That Was Rejected
 
 ## Example 1
@@ -466,6 +507,18 @@ Shared contracts represent the canonical language of the system.
 Even small naming differences would introduce drift between the Architecture, Database Design, Localization Specification, API Specification, and implementation.
 
 The implementation was revised to use the documented vocabulary exactly.
+
+---
+
+## Example 8
+
+The initial repository proposal introduced generic repository abstractions and globally accessible startup state.
+
+### Reason Rejected
+
+The architecture intentionally favors explicit, ownership-oriented repositories over generic abstractions.
+
+Repository responsibilities were reduced to infrastructure persistence only, and startup data was exposed through dependency injection rather than global state.
 
 ---
 

@@ -1,19 +1,18 @@
-import { Pool } from "pg";
-
+import { createDatabaseConnection, type DatabaseConnection } from "./client.js";
 import { runMigrations } from "./migrate.js";
 import { seedDatabase } from "./seed.js";
 
 export async function initializeDatabase(
   connectionString: string,
-): Promise<Pool> {
-  const pool = new Pool({ connectionString });
+): Promise<DatabaseConnection> {
+  const connection = createDatabaseConnection(connectionString);
 
   try {
-    await runMigrations(pool);
-    await seedDatabase(pool);
-    return pool;
+    await runMigrations(connection.pool);
+    await seedDatabase(connection.pool);
+    return connection;
   } catch (error) {
-    await pool.end();
+    await connection.pool.end();
     throw error;
   }
 }
