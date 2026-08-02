@@ -20,6 +20,7 @@ services:
     environment:
       APP_VERSION: ${APP_VERSION:-1.0.0}
       DATABASE_URL: postgresql://${POSTGRES_USER:-electrifix}:${POSTGRES_PASSWORD:-electrifix}@db:5432/${POSTGRES_DB:-electrifix}
+      TEST_DATABASE_URL: postgresql://${POSTGRES_USER:-electrifix}:${POSTGRES_PASSWORD:-electrifix}@db:5432/${POSTGRES_DB:-electrifix}
       LOG_LEVEL: ${LOG_LEVEL:-info}
       PORT: 3001
     depends_on:

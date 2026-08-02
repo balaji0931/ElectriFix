@@ -412,6 +412,8 @@ The implementation was reviewed to ensure:
 - startup validates structural integrity rather than seed counts
 - transaction support remains persistence-only
 
+During verification, integration tests were initially discovered to be conditionally skipped because TEST_DATABASE_URL was not supplied through Docker Compose. The environment configuration was corrected so the standard container test command executes the complete repository and database integration suite without manual intervention.
+
 Generic repository abstractions and global startup state were intentionally rejected.
 
 ## Outcome
