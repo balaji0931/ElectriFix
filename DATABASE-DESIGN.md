@@ -145,7 +145,8 @@
 | `event` | text | NO | One of: `heartbeat`, `power_lost`, `power_restored`, `boot` |
 | `energized` | boolean | NO | Device's current state at event time |
 | `device_ts` | timestamp | NO | Device clock. **Skew up to ±90s.** Not monotonic across devices. |
-| `seq` | integer | NO | Monotonic per device, resets on `boot`. Primary ordering/dedup tool. |
+| `boot_counter` | integer | NO | Persistent reboot generation. Increments once per device reboot. Paired with `seq` for stream identity and ordering. |
+| `seq` | integer | NO | Resets to 0 within each `boot_counter`. The ordered pair `(boot_counter, seq)` is monotonic per device. |
 | `battery_mv` | integer | YES | Capacitor voltage. Below ~3200 = may miss dying message. |
 | `rssi` | integer | YES | Radio signal strength |
 | `firmware` | text | YES | Device firmware version |
@@ -155,13 +156,15 @@
 
 | Question | Answer |
 |----------|--------|
-| Who creates it? | `EventPipeline` — on every incoming telemetry message, after validation. Duplicates are rejected via `ON CONFLICT DO NOTHING` on `(device_id, seq)` and never inserted. |
+| Who creates it? | `EventPipeline` — on every incoming telemetry message, after validation. Duplicates are rejected via `ON CONFLICT DO NOTHING` on `(device_id, boot_counter, seq)` and never inserted. |
 | Who updates it? | Nobody. **Immutable.** Once written, never changed. |
 | Who reads it? | Primarily for audit/debugging/event history timeline. `PoleStateService` does NOT read this table — it receives processed events in-memory from EventPipeline. |
 | Can anyone else modify it? | No. Append-only. |
 
 > [!IMPORTANT]
-> **Duplicates are dropped, not stored.** The `(device_id, seq)` unique constraint combined with `ON CONFLICT DO NOTHING` means duplicate messages are silently discarded. If you need duplicate metrics, count them in-memory in EventPipeline or log them via Pino — don't store them in the database.
+> **Telemetry Stream Identity Invariant:** For a given device, `(boot_counter, seq)` is strictly monotonic in lexicographic order. The backend never compares `seq` values across different `boot_counter` values. The `(device_id, boot_counter, seq)` unique constraint with `ON CONFLICT DO NOTHING` silently drops duplicates. If you need duplicate metrics, count them in-memory in EventPipeline or log them via Pino — don't store them in the database.
+
+> **Migration requirement:** The schema migration adds non-null `telemetry_events.boot_counter`, replaces the former two-column telemetry uniqueness constraint with `uq_device_boot_counter_seq`, and adds nullable `pole_states.last_boot_counter` beside `last_seq`. Seeded pole states initialize both stream-cursor fields to `NULL`.
 
 > [!NOTE]
 > **No suppression tracking in this table.** Whether an event was suppressed due to a scheduled outage or classified as a dead sensor is a domain decision made by the noise filter, not a property of the raw event. The telemetry table stores what the device sent. The domain layer decides what to do with it.
@@ -178,7 +181,8 @@
 | `energized` | text | NO | Current status: `LIVE`, `DARK`, `PRESUMED_DARK`, `UNKNOWN` |
 | `last_heartbeat_at` | timestamp | YES | Most recent heartbeat received. NULL if never heard from. |
 | `last_event_at` | timestamp | YES | Most recent event of any type |
-| `last_seq` | integer | YES | Last processed sequence number. Used for dedup/ordering. |
+| `last_boot_counter` | integer | YES | Boot generation of the last processed event. Paired with `last_seq` as the durable stream cursor. |
+| `last_seq` | integer | YES | Last processed sequence number within `last_boot_counter`. |
 | `firmware_version` | text | YES | Current firmware. Determines behavior (fw 1.2 = silent death). |
 | `device_health` | text | NO | `NO_DEVICE`, `HEALTHY`, `OFFLINE`, `DEGRADED`. `NO_DEVICE` means no telemetry hardware is installed. |
 | `has_device` | boolean | NO | Whether a telemetry device is fitted. Copied from `poles.device_id IS NOT NULL` at seed time. |
@@ -351,6 +355,7 @@ erDiagram
         text event
         boolean energized
         timestamp device_ts
+        integer boot_counter
         integer seq
         integer battery_mv
         integer rssi
@@ -363,6 +368,7 @@ erDiagram
         text energized
         timestamp last_heartbeat_at
         timestamp last_event_at
+        integer last_boot_counter
         integer last_seq
         text firmware_version
         text device_health
@@ -461,7 +467,7 @@ erDiagram
 | `feeders` | `feeder_id` | Natural (text) | Stable identifiers from the department's registry. Meaningful, unique, never change. |
 | `distribution_transformers` | `dt_id` | Natural (text) | Same as feeders — stable registry IDs. |
 | `poles` | `pole_id` | Natural (text) | Same as feeders — stable registry IDs. |
-| `telemetry_events` | `id` | Surrogate (UUIDv7) | No natural key. `device_id + seq` is the dedup key but not globally unique (seq resets on boot). UUIDv7 is time-sortable — good for append-only tables. |
+| `telemetry_events` | `id` | Surrogate (UUIDv7) | No natural key. `(device_id, boot_counter, seq)` is the immutable stream identity and dedup key. UUIDv7 is time-sortable — good for append-only tables. |
 | `pole_states` | `pole_id` | Natural (text, FK) | 1:1 with `poles`. The pole_id IS the state's identity. |
 | `faults` | `fault_id` | Surrogate (UUIDv7) | No natural key. System-generated. Time-sortable. |
 | `tickets` | `ticket_id` | Surrogate (UUIDv7) | No natural key. System-generated. Time-sortable. |
@@ -491,7 +497,7 @@ erDiagram
 
 | Table | Constraint | Columns | Purpose |
 |-------|-----------|---------|---------|
-| `telemetry_events` | `uq_device_seq` | `(device_id, seq)` | Deduplication. `ON CONFLICT DO NOTHING`. Duplicates are silently dropped, never stored. Per architecture decision D3. |
+| `telemetry_events` | `uq_device_boot_counter_seq` | `(device_id, boot_counter, seq)` | Deduplication. `ON CONFLICT DO NOTHING`. Duplicates are silently dropped, never stored. Per architecture decision D3. |
 | `tickets` | `uq_ticket_fault` | `(fault_id)` | Ensures 1:1 — no two tickets can reference the same fault. Single FK, no circular dependency. |
 
 ### Check Constraints
@@ -530,7 +536,7 @@ Every index maps to a specific query pattern from the architecture.
 
 | Table | Index | Columns | Query Pattern |
 |-------|-------|---------|---------------|
-| `telemetry_events` | `uq_device_seq` (unique) | `(device_id, seq)` | Deduplication on ingest. `ON CONFLICT DO NOTHING`. |
+| `telemetry_events` | `uq_device_boot_counter_seq` (unique) | `(device_id, boot_counter, seq)` | Deduplication on ingest. `ON CONFLICT DO NOTHING`. |
 | `telemetry_events` | `idx_telem_pole_received` | `(pole_id, received_at DESC)` | Event history timeline for a specific pole (dashboard detail view) |
 | `telemetry_events` | `idx_telem_received` | `(received_at DESC)` | Recent events query for debugging / system health |
 
@@ -645,7 +651,7 @@ These fields are **denormalized**: they exist both in the JSONB blob (for comple
 | "Current state of all poles for DT X" | `pole_states JOIN poles ON pole_id WHERE dt_id = ?` | In-memory via PoleStateService. DB fallback uses `idx_poles_dt`. |
 | "All active faults" | `faults WHERE status = 'active'` | `idx_faults_status` partial index. Typically < 20 rows. |
 | "All open tickets" | `tickets WHERE status NOT IN ('verified', 'closed')` | `idx_tickets_status` partial index. Typically < 20 rows. |
-| "Is this a duplicate?" | `telemetry_events WHERE device_id = ? AND seq = ?` | `uq_device_seq` unique index. `ON CONFLICT DO NOTHING`. |
+| "Is this a duplicate?" | `telemetry_events WHERE device_id = ? AND boot_counter = ? AND seq = ?` | `uq_device_boot_counter_seq` unique index. `ON CONFLICT DO NOTHING`. |
 | "Scheduled outages now" | `scheduled_outages WHERE scheduled_start <= now + 40min AND scheduled_end >= now - 40min` | `idx_outages_time` + `idx_outages_target`. Very small table. |
 
 ---

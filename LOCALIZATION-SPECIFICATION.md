@@ -67,7 +67,7 @@ The engine receives **already-processed, already-filtered data**:
 3. `ScheduledOutageFilter` has already suppressed outage-window events.
 4. `Debouncer` has already confirmed sustained dark state (not transient).
 
-The engine never reads raw telemetry. It never accesses the database. It never imports Express, Drizzle, or any framework.
+The engine never reads raw telemetry. It consumes `PoleStateService` snapshots only after `EventPipeline` has enforced the telemetry stream identity `(device_id, boot_counter, seq)` and lexicographic `(boot_counter, seq)` ordering. It never accesses the database. It never imports Express, Drizzle, or any framework.
 
 ### Downstream Consumers
 
@@ -268,15 +268,15 @@ sequenceDiagram
     participant WS as WebSocket
     participant UI as Operator Console
 
-    Device->>API: { pole_id, event: "power_lost", energized: false, seq, ... }
+    Device->>API: { pole_id, event: "power_lost", energized: false, boot_counter, seq, ... }
     API->>EP: Raw telemetry event
 
-    Note over EP: Validate (zod schema)<br/>Dedup (device_id + seq)<br/>Reject stale retries<br/>Buffer bursts
+    Note over EP: Validate (zod schema)<br/>Dedup (device_id + boot_counter + seq)<br/>Reject stale tuples<br/>Buffer bursts
 
     EP->>DB: INSERT INTO telemetry_events (ON CONFLICT DO NOTHING)
     EP->>PSS: Processed event
 
-    Note over PSS: Update pole state:<br/>energized → DARK<br/>last_heartbeat_at<br/>last_seq, firmware
+    Note over PSS: Update pole state:<br/>energized → DARK<br/>last_heartbeat_at<br/>last_boot_counter, last_seq, firmware
 
     PSS->>DB: UPDATE pole_states SET energized = 'DARK' ...
     PSS-->>UC: State changed to DARK for pole P-024432
@@ -334,10 +334,10 @@ Localization is triggered **only** after `PoleStateService` publishes a meaningf
 | Transition | Reason |
 |-----------|--------|
 | `LIVE` → `LIVE` | Normal heartbeat. No state change. |
-| Duplicate heartbeat (same `seq`) | Dropped by EventPipeline before reaching PoleStateService. |
+| Duplicate heartbeat (same `boot_counter` and `seq`) | Dropped by EventPipeline before reaching PoleStateService. |
 | RSSI change (same energized state) | Telemetry metadata, not a state transition. |
 | Battery voltage change | Telemetry metadata, not a state transition. |
-| Duplicate `power_lost` (same `seq`) | Dropped by EventPipeline. |
+| Duplicate `power_lost` (same `boot_counter` and `seq`) | Dropped by EventPipeline. |
 | Event suppressed by `ScheduledOutageFilter` | Scheduled outage — not a fault. |
 | Pole flagged as `DEAD_SENSOR` | Dead sensor — not a fault. |
 
@@ -755,7 +755,7 @@ Every noise scenario from the assignment, with deterministic behavior.
 
 **Source:** At-least-once delivery. Retries up to 6 hours.
 
-**Behavior:** `EventPipeline` handles this before the engine is invoked. `(device_id, seq)` unique constraint with `ON CONFLICT DO NOTHING`. Duplicates are silently dropped. The engine never sees them.
+**Behavior:** `EventPipeline` handles this before the engine is invoked. `(device_id, boot_counter, seq)` is the unique stream identity and uses `ON CONFLICT DO NOTHING`. Duplicates are silently dropped. For each device, `(boot_counter, seq)` is strictly monotonic in lexicographic order; the engine never sees duplicates.
 
 ### 10b. Out-of-Order Packets
 
@@ -818,7 +818,7 @@ Every noise scenario from the assignment, with deterministic behavior.
 
 **Source:** Device offline for hours, then replays old events.
 
-**Behavior:** `EventPipeline` handles: if `seq < last_processed_seq` for that device, the event is a stale retry. Discarded. Never reaches `PoleStateService` or the engine.
+**Behavior:** `EventPipeline` handles: if `(boot_counter, seq)` is lexicographically lower than the last processed tuple for that device, the event is a stale retry. Discarded. An event from a higher `boot_counter` begins a new device generation even if its `boot` event was lost. The backend never compares `seq` values across different boot counters. Stale retries never reach `PoleStateService` or the engine.
 
 ### 10j. Clock Skew (±90 seconds)
 
@@ -826,7 +826,7 @@ Every noise scenario from the assignment, with deterministic behavior.
 
 **Behavior:** The engine never uses `device_ts` for ordering or decision-making. It relies on:
 - `received_at` (server timestamp) for recency.
-- `seq` (monotonic per device) for ordering within a device.
+- `(boot_counter, seq)` for deterministic ordering within a device stream.
 - Current state snapshots, not event timestamps.
 
 ### 10k. Missing Devices (~9% of Poles)
@@ -943,7 +943,7 @@ The operator always knows which kind of answer they are looking at.
 | Dead sensor flagged as fault | `DeadSensorDetector` catches isolated dark with live children BEFORE engine is called |
 | Scheduled outage fires alert | `ScheduledOutageFilter` suppresses with ±40 min tolerance BEFORE engine is called |
 | Single missed heartbeat | `Debouncer` requires ≥2 missed before marking PRESUMED_DARK |
-| Stale `power_lost` replay | `EventPipeline` discards if `seq < last_processed_seq` |
+| Stale `power_lost` replay | `EventPipeline` discards if `(boot_counter, seq)` is lower than the last processed tuple |
 
 ### 12b. False Negatives (Missing a Real Fault)
 
@@ -1103,7 +1103,7 @@ The operator always knows which kind of answer they are looking at.
 
 ### Scenario 10: Duplicate Telemetry
 
-**Given:** Device retransmits `power_lost` for P-6 three times (same `seq`).
+**Given:** Device retransmits `power_lost` for P-6 three times (same `boot_counter` and `seq`).
 
 **When:** `EventPipeline` processes all three.
 
@@ -1176,7 +1176,7 @@ The operator always knows which kind of answer they are looking at.
 
 **Given:** Fault on span P-5 → P-6 already detected. Ticket exists in `detected` status. Fault and evidence persisted.
 
-**When:** Device retransmits `power_lost` for P-6 five more times (same `seq`). Additionally, P-7 (already dark) retransmits its `power_lost` three times (same `seq`).
+**When:** Device retransmits `power_lost` for P-6 five more times (same `boot_counter` and `seq`). Additionally, P-7 (already dark) retransmits its `power_lost` three times with its same tuple.
 
 **Then:**
 - All duplicate events are dropped by `EventPipeline` (`ON CONFLICT DO NOTHING`).

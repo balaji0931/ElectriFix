@@ -100,7 +100,7 @@ flowchart TD
 | Phase | Phase Name | Purpose | Dependencies | Primary Specifications | Definition of Done | Estimated Commit Range |
 |---:|---|---|---|---|---|---|
 | 0 | Project Scaffold and Tooling | Create the runnable TypeScript, React, Docker, lint, test, and config foundation. | None | `ARCHITECTURE.md` sections 1, 2, 3f | `docker compose up` starts the skeleton stack, health check works, lint/test commands exist. | 2-3 commits |
-| 1 | Database Schema and Seed Data | Implement PostgreSQL schema, migrations, and idempotent synthetic seed data. | 0 | `DATABASE-DESIGN.md`, assignment data scale | Database boots with feeders, DTs, poles, pole states, and scheduled outages seeded. | 2-4 commits |
+| 1 | Database Schema and Seed Data | Implement PostgreSQL schema, migrations, and idempotent synthetic seed data. | 0 | `DATABASE-DESIGN.md`, assignment data scale | Database boots with feeders, DTs, poles, pole states, scheduled outages, and the telemetry stream identity constraint seeded. | 2-4 commits |
 | 2 | Shared Contracts and Policies | Define domain enums, DTOs, product policies, validation primitives, and test harness. | 0 | All frozen specs | Shared types compile and encode documented enums, policies, and evidence shapes. | 1-2 commits |
 | 3 | Repositories and State Bootstrap | Add lean repository adapters and startup loading for registry and current state. | 1, 2 | `ARCHITECTURE.md`, `DATABASE-DESIGN.md` ownership model | Repositories read/write only owned tables; app can load seed network and pole state at startup. | 2-3 commits |
 | 4 | Topology Resolution | Implement recorded and fallback topology, define inferred topology path with quality-gated implementation. | 2, 3 | `ARCHITECTURE.md` topology, `LOCALIZATION-SPECIFICATION.md` section 11 | `GET /api/network/topology/:dtId` can return recorded and fallback graphs through resolver tests or adapter tests. | 2-4 commits |
@@ -290,7 +290,7 @@ Implement the frozen logical database model and idempotent startup seed so the r
 
 - Migration smoke test against test database.
 - Seed idempotency test.
-- Constraint tests for key enums and duplicate telemetry key.
+- Constraint tests for key enums, `last_boot_counter`, and the `(device_id, boot_counter, seq)` duplicate telemetry key.
 - Seed-shape assertions for recorded topology ratio, missing devices, and row counts.
 
 **Documentation Updates Required**
@@ -325,6 +325,7 @@ Create the shared TypeScript contracts that encode documented domain language be
 **Scope**
 
 - Domain enums and types for telemetry, pole state, topology, faults, evidence, confidence, tickets, scheduled outages, WebSocket messages, and API models.
+- Canonical telemetry stream contracts for required `boot_counter`, `seq`, and the lexicographic `(boot_counter, seq)` ordering invariant.
 - Product policy defaults from `LOCALIZATION-SPECIFICATION.md`.
 - Zod schemas for request validation where useful.
 - Test harness and fixtures for pure domain tests.
@@ -365,6 +366,7 @@ Create the shared TypeScript contracts that encode documented domain language be
 **Acceptance Criteria**
 
 - Every documented enum value exists exactly once in shared contracts.
+- Telemetry input contracts and Zod schemas require `boot_counter`; no contract defines ordering or idempotency with `seq` alone.
 - `FaultEvidence` shape matches localization, database JSONB, and API response expectations.
 - Product policies are centrally defined and exposed for `GET /api/config` later.
 - Domain tests can import contracts without importing infrastructure.
@@ -413,6 +415,7 @@ Implement lean persistence adapters and startup loading while preserving ownersh
 - `ticket-repository.ts`
 - `network-repository.ts`
 - Startup loading for registry data and existing pole states.
+- Persistence of the nullable `(last_boot_counter, last_seq)` telemetry stream cursor owned by `PoleStateService`.
 - Transaction helpers needed by application use cases.
 
 **Out of Scope**
@@ -457,6 +460,7 @@ Implement lean persistence adapters and startup loading while preserving ownersh
 
 - Repository integration tests pass against seeded test DB.
 - Startup can load seeded network and current pole states.
+- Telemetry repository supports the documented `(device_id, boot_counter, seq)` insert identity without embedding stale-retry policy.
 - No repository contains business branching for localization or ticket workflow.
 
 **Testing Required**
@@ -584,7 +588,7 @@ Implement the single owner of current network state.
 
 - In-memory pole state cache backed by `pole_states`.
 - Event application rules for `heartbeat`, `power_lost`, `power_restored`, and `boot`.
-- Device metadata tracking: `last_seq`, firmware, RSSI, battery, heartbeat timestamps, and health.
+- Device metadata tracking: the durable `(last_boot_counter, last_seq)` stream cursor, firmware, RSSI, battery, heartbeat timestamps, and health.
 - Startup rebuild from `pole_states`.
 - State transition publication for downstream use cases.
 
@@ -653,7 +657,7 @@ Implement the single owner of current network state.
 
 - Reading raw telemetry from localization later instead of state snapshots.
 - Allowing repositories or routes to update pole state directly.
-- Mishandling `boot` sequence reset behavior.
+- Comparing `seq` values across reboot generations instead of using the lexicographic `(boot_counter, seq)` cursor.
 
 **Notes for Future Phases**
 
@@ -760,8 +764,8 @@ Build the production ingestion path for real devices and simulator telemetry.
 - `POST /api/telemetry`.
 - `POST /api/telemetry/batch`.
 - Zod validation for telemetry payloads.
-- Deduplication by `(device_id, seq)` with `ON CONFLICT DO NOTHING`.
-- Stale retry rejection using last processed sequence rules.
+- Deduplication by `(device_id, boot_counter, seq)` with `ON CONFLICT DO NOTHING`.
+- Stale retry rejection using the persisted lexicographic `(last_boot_counter, last_seq)` cursor; never compare `seq` values across boot counters.
 - In-memory burst buffer with documented batch drain behavior.
 - Forwarding accepted events to `PoleStateService`.
 
@@ -789,7 +793,7 @@ Build the production ingestion path for real devices and simulator telemetry.
 **Files Expected**
 
 - Telemetry route tests.
-- Pipeline tests for duplicates, stale retries, ordering, and batch limits.
+- Pipeline tests for duplicates, stale retries, reboot recovery after a lost boot event, tuple ordering, database restart recovery, and batch limits.
 
 **Specifications Referenced**
 
@@ -801,7 +805,8 @@ Build the production ingestion path for real devices and simulator telemetry.
 
 - Valid telemetry returns `202 Accepted`.
 - Unknown `pole_id` returns `422`.
-- Duplicate telemetry returns `202` but does not update state or create duplicate rows.
+- Duplicate `(device_id, boot_counter, seq)` telemetry returns `202` but does not update state or create duplicate rows.
+- A higher `boot_counter` accepts a rebooted device stream; a lower tuple is rejected as stale without updating state.
 - Batch endpoint accepts up to documented batch size and reports accepted/rejected counts.
 - Event processing updates `pole_states` through `PoleStateService`.
 
@@ -814,7 +819,7 @@ Build the production ingestion path for real devices and simulator telemetry.
 **Testing Required**
 
 - Route tests for success and validation failures.
-- Integration tests against test DB for deduplication.
+- Integration tests against test DB for tuple deduplication, stale retries, reboot recovery, and restart recovery.
 - Burst smoke test at a small CI-safe scale.
 
 **Documentation Updates Required**
@@ -1129,7 +1134,7 @@ Build a realistic simulator that generates telemetry through the production pipe
 - Span, DT, and feeder fault injection.
 - Repair event generation.
 - Firmware 1.2 silence behavior.
-- `power_lost` delivery rate, clock skew, duplicate events, stale retries, out-of-order delivery, and dead sensor noise.
+- `power_lost` delivery rate, clock skew, boot-counter increments, duplicate tuples, stale retries, out-of-order delivery, and dead sensor noise.
 - Simulation status tracking.
 
 **Out of Scope**
@@ -1173,7 +1178,7 @@ Build a realistic simulator that generates telemetry through the production pipe
 
 - Span fault simulation computes affected downstream poles using topology.
 - DT and feeder faults produce physically plausible telemetry.
-- Repair simulation emits `boot` and `power_restored` events.
+- Repair simulation increments `boot_counter` and emits `boot` followed by `power_restored` events in the new device generation.
 - Noise scenarios can be injected independently.
 - All generated telemetry enters the same pipeline as real telemetry.
 
@@ -1186,7 +1191,7 @@ Build a realistic simulator that generates telemetry through the production pipe
 **Testing Required**
 
 - Unit tests for affected-pole calculation.
-- Integration tests for span fault, DT fault, feeder fault, dead sensor, duplicate telemetry, stale retry, out-of-order messages, and repair.
+- Integration tests for span fault, DT fault, feeder fault, dead sensor, duplicate telemetry tuples, stale retries, reboot recovery, out-of-order messages, and repair.
 
 **Documentation Updates Required**
 
@@ -1685,7 +1690,7 @@ Prove the full system meets assignment gates and documented performance targets 
 - End-to-end test suite for critical flows.
 - Performance tests for ingest throughput, burst handling, dashboard load, and restoration verification latency.
 - Docker fresh-clone rehearsal.
-- Failure-mode rehearsal: DB startup race, CORS/proxy, WebSocket disconnect, stale telemetry, scheduled outage, duplicate telemetry.
+- Failure-mode rehearsal: DB startup race, CORS/proxy, WebSocket disconnect, stale telemetry, reboot recovery after lost boot, scheduled outage, duplicate telemetry tuples, and database restart recovery.
 - Bug fixes discovered by integration.
 
 **Out of Scope**
@@ -1730,7 +1735,7 @@ Prove the full system meets assignment gates and documented performance targets 
 - Scheduled outage produces no fault ticket during tolerance window.
 - Repair auto-verifies from telemetry.
 - Premature closure is rejected.
-- Duplicate telemetry is idempotent.
+- Duplicate telemetry tuples are idempotent, and a rebooted stream recovers correctly after a lost boot event.
 - Performance measurements are captured for assignment targets.
 
 **Definition of Done**
@@ -2119,8 +2124,8 @@ Before every commit:
 - [ ] `POST /api/telemetry` matches API spec.
 - [ ] `POST /api/telemetry/batch` matches API spec.
 - [ ] Unknown poles return `422`.
-- [ ] Duplicate `(device_id, seq)` events return `202` and are dropped internally.
-- [ ] Stale retries do not corrupt current state.
+- [ ] Duplicate `(device_id, boot_counter, seq)` events return `202` and are dropped internally.
+- [ ] Stale tuples do not corrupt current state; a higher `boot_counter` recovers a rebooted stream, including after database restart.
 - [ ] Burst buffering is implemented and tested.
 
 ## Localization

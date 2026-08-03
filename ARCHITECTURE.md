@@ -220,7 +220,7 @@ ElectriFix/
 |--------|-------|----------------|
 | `domain/localization` | Domain | **FaultLocalizationEngine** — single entry point. Internally orchestrates boundary detection, fault grouping, confidence scoring, and produces structured `FaultEvidence` for every detected fault |
 | `domain/topology` | Domain | **TopologyResolver** interface with three implementations. `NetworkGraph` tree structure. All topology access goes through the resolver abstraction |
-| `domain/pole-state` | Domain | **PoleStateService** — explicit owner of current network state. Maintains latest energized status, last heartbeat, last seq, firmware version, device health for every pole. Localization reads state from here, never from raw telemetry. |
+| `domain/pole-state` | Domain | **PoleStateService** — explicit owner of current network state. Maintains latest energized status, last heartbeat, the durable `(last_boot_counter, last_seq)` stream cursor, firmware version, and device health for every pole. Localization reads state from here, never from raw telemetry. |
 | `domain/noise-filter` | Domain | Dead sensor detection, scheduled outage filtering, transient debouncing |
 | `domain/ticket` | Domain | Ticket lifecycle state machine, telemetry-based restoration verification |
 | `application/*` | Application | Thin orchestration — one file per use case, wires domain to infrastructure |
@@ -313,11 +313,11 @@ flowchart LR
 ```mermaid
 flowchart TD
     A["Telemetry Event Arrives"] --> EP["EventPipeline"]
-    EP --> B{"Duplicate?<br/>(device_id + seq)"}
+    EP --> B{"Duplicate?<br/>(device_id + boot_counter + seq)"}
     B -->|Yes| Z["Discard"]
     B -->|No| C["Store in telemetry_events"]
     C --> PSS["PoleStateService"]
-    PSS --> PSS2["Update pole state:<br/>energized, last_heartbeat,<br/>last_seq, firmware"]
+    PSS --> PSS2["Update pole state:<br/>energized, last_heartbeat,<br/>last_boot_counter, last_seq, firmware"]
     PSS2 --> D{"Scheduled Outage?<br/>(feeder/DT + time window<br/>± 40min tolerance)"}
     D -->|Yes| Z2["Suppress — tag as scheduled"]
     D -->|No| E{"State changed to<br/>DARK or PRESUMED_DARK?"}
@@ -486,7 +486,7 @@ graph TB
 
 | Component | Role |
 |-----------|------|
-| **`PoleStateService`** | **Explicit owner of the current state of the network.** Maintains for every pole: current energized/de-energized status, last heartbeat timestamp, last sequence number processed, firmware version, device health status. Updated by EventPipeline on every processed telemetry event. Queried by FaultLocalizationEngine and RestorationVerifier — they never read raw telemetry, they ask: "what is the current state of the poles?" |
+| **`PoleStateService`** | **Explicit owner of the current state of the network.** Maintains for every pole: current energized/de-energized status, last heartbeat timestamp, and the last processed `(boot_counter, seq)` cursor, plus firmware version and device health status. Updated by EventPipeline on every processed telemetry event. Queried by FaultLocalizationEngine and RestorationVerifier — they never read raw telemetry, they ask: "what is the current state of the poles?" |
 
 > [!IMPORTANT]
 > `PoleStateService` separates **event processing** (EventPipeline) from **state management** (PoleStateService) from **fault reasoning** (FaultLocalizationEngine). This is a critical architectural seam:
@@ -502,7 +502,8 @@ graph TB
 | `energized` | Current status: `LIVE` / `DARK` / `PRESUMED_DARK` / `UNKNOWN` |
 | `last_heartbeat_at` | Timestamp of most recent heartbeat |
 | `last_event_at` | Timestamp of most recent event of any type |
-| `last_seq` | Last processed sequence number (for dedup and ordering) |
+| `last_boot_counter` | Boot generation of the last processed telemetry event; paired with `last_seq` for stream ordering |
+| `last_seq` | Sequence number of the last processed telemetry event within `last_boot_counter` |
 | `firmware_version` | Device firmware (determines behavior — fw 1.2 doesn't send `power_lost`) |
 | `device_health` | `NO_DEVICE` / `HEALTHY` / `OFFLINE` / `DEGRADED`. `NO_DEVICE` denotes no installed telemetry hardware; other states apply to installed devices and are based on heartbeat regularity and RSSI. |
 | `has_device` | Whether a telemetry device is fitted on this pole |
@@ -539,7 +540,7 @@ graph TB
 | **`db/schema`** | Drizzle schema: `poles`, `distribution_transformers`, `feeders`, `telemetry_events`, `pole_states`, `faults` (with `evidence` JSONB column), `tickets`, `scheduled_outages` |
 | **`db/seed`** | Generates and inserts synthetic data on startup (G3). ~4,000 poles, ~60 DTs, ~5 feeders. 40% recorded topology, 60% missing. ~9% poles without devices. Idempotent. |
 | **`repositories/*`** | Lean data access. 4 files total — not one per entity. `network-repository.ts` combines DTs, feeders, and outages. No factories, no generic base classes. |
-| **`event-pipeline`** | The telemetry processing pipeline: (1) validate schema (zod), (2) deduplicate (`device_id` + `seq`, discard if seen), (3) handle stale retries (ignore if `seq` < last processed), (4) buffer bursts (in-memory ring buffer, drain in batches), (5) forward to detection. |
+| **`event-pipeline`** | The telemetry processing pipeline: (1) validate schema (zod), (2) deduplicate `(device_id, boot_counter, seq)` with `ON CONFLICT DO NOTHING`, (3) reject stale retries when `(boot_counter, seq)` is lower than the persisted cursor for that device stream, (4) buffer bursts (in-memory ring buffer, drain in batches), (5) forward accepted events to state management. For a device, `(boot_counter, seq)` is strictly monotonic in lexicographic order; `seq` is never compared across boot counters. |
 | **`websocket-emitter`** | Manages WS connections, broadcasts fault/ticket/evidence updates. |
 | **`pincode-lookup`** | Offline reverse-geocoding from lat/lon. Committed lookup table — no external API keys. Fallback: nearest pole's known pincode. |
 | **`scheduled-outage-client`** | Mock implementation returning data from `data/seed/scheduled-outages.json`. |
@@ -680,7 +681,7 @@ The Domain layer **never** imports from any other layer. Application orchestrate
 |---|----------|------------|-----------|
 | **D1** | Missing topology strategy | **Hybrid.** Known → exact span. Unknown → try inference → quality check → if poor, DT-level. | Central design question. Assignment expects explicit handling of the 60% case. TopologyResolver abstraction makes this a pluggable concern. |
 | **D2** | Real-time push | **WebSocket.** SSE as documented fallback if deployment fails. | Operator needs to see updates. WS gives bidirectional comms. Deployment risk documented in DEPLOYMENT.md. |
-| **D3** | Deduplication | **`device_id` + `seq` unique constraint.** `ON CONFLICT DO NOTHING`. | Simple, correct at this scale. Handled inside EventPipeline. |
+| **D3** | Telemetry stream identity | **`device_id` + `boot_counter` + `seq` unique constraint.** `ON CONFLICT DO NOTHING`; ordering uses lexicographic `(boot_counter, seq)`. | Firmware resets `seq` on reboot. The persistent boot counter makes duplicates, stale retries, reboot recovery, and restart recovery unambiguous. |
 | **D4** | Burst absorption | **In-memory ring buffer in EventPipeline.** Batch drain every 50ms. No Redis/BullMQ. | Sufficient for 5,000 msg in 10s. Document that 30 subdivisions would need a queue. |
 | **D5** | AI feature | **Natural-language incident summary.** LLM generates operator-friendly description from structured FaultEvidence. Fallback: templated string. ~$0.001/call. | LLM earns its keep on text generation from structured data. Not localization (deterministic, free, explainable). Graceful degradation if unavailable. |
 | **D6** | Firmware 1.2 | **Detect via missed heartbeats.** If fw 1.2 device silent for >30 min (2+ missed heartbeats), mark PRESUMED_DARK. | 8% of fleet. Without this, 8% of faults are invisible. |

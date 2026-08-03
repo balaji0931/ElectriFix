@@ -417,6 +417,7 @@ flowchart TB
   "event": "power_lost",                     // required, enum: heartbeat | power_lost | power_restored | boot
   "energized": false,                        // required, boolean
   "ts": "2026-07-29T02:14:07.412Z",          // required, ISO 8601
+  "boot_counter": 17,                         // required, integer >= 0; increments once per reboot
   "seq": 88213,                              // required, integer ≥ 0
   "battery_mv": 3480,                        // optional, integer
   "rssi": -91,                               // optional, integer
@@ -431,7 +432,8 @@ flowchart TB
 3. `event`: must be one of `heartbeat`, `power_lost`, `power_restored`, `boot`.
 4. `energized`: boolean.
 5. `ts`: valid ISO 8601 timestamp.
-6. `seq`: non-negative integer.
+6. `boot_counter`: non-negative integer. Persistent reboot generation; increments once per device reboot.
+7. `seq`: non-negative integer. Resets within a `boot_counter` and is ordered only with that counter.
 
 **Success Response:** `202 Accepted`
 
@@ -449,7 +451,7 @@ flowchart TB
 | `400 Bad Request` | Malformed JSON or missing required fields |
 | `422 Unprocessable Entity` | Schema valid but business rule violated (unknown `pole_id`, invalid `event` value) |
 
-**Idempotency:** Duplicate `(device_id, seq)` pairs are silently accepted (return `202`). The EventPipeline drops them via `ON CONFLICT DO NOTHING`. The caller never sees an error for duplicates.
+**Idempotency:** Duplicate `(device_id, boot_counter, seq)` tuples are silently accepted (return `202`). The EventPipeline drops them via `ON CONFLICT DO NOTHING`. The caller never sees an error for duplicates. For one device, `(boot_counter, seq)` is strictly monotonic in lexicographic order; `seq` is never compared across boot counters.
 
 **Side Effects:**
 
@@ -483,8 +485,8 @@ flowchart TB
 ```
 {
   "events": [
-    { "device_id": "...", "pole_id": "...", "event": "...", ... },
-    { "device_id": "...", "pole_id": "...", "event": "...", ... }
+    { "device_id": "...", "pole_id": "...", "event": "...", "boot_counter": 17, "seq": 0, ... },
+    { "device_id": "...", "pole_id": "...", "event": "...", "boot_counter": 17, "seq": 1, ... }
   ]
 }
 ```
@@ -502,7 +504,7 @@ flowchart TB
 }
 ```
 
-**Idempotency:** Same as single ingest. Duplicate events within the batch or against existing data are silently skipped.
+**Idempotency:** Same as single ingest. Every event requires `boot_counter`; duplicate `(device_id, boot_counter, seq)` tuples within the batch or against existing data are silently skipped.
 
 ---
 
@@ -1245,7 +1247,8 @@ The API is the **read-only surface** for these policies. The source of truth for
 | `event` | enum | YES | `heartbeat` \| `power_lost` \| `power_restored` \| `boot` |
 | `energized` | boolean | YES | Current state as device sees it. |
 | `ts` | ISO 8601 | YES | Device clock. Skew up to ±90s. Not trusted for ordering. |
-| `seq` | integer | YES | ≥ 0. Monotonic per device. Resets on `boot`. |
+| `boot_counter` | integer | YES | ≥ 0. Persistent reboot generation; increments once per device reboot. |
+| `seq` | integer | YES | ≥ 0. Resets to 0 within each `boot_counter`. Ordered with `boot_counter`, never alone. |
 | `battery_mv` | integer | NO | Capacitor voltage. Below ~3200 = may miss dying message. |
 | `rssi` | integer | NO | Radio signal strength. |
 | `fw` | string | NO | Firmware version. ~8% on 1.2.x (no `power_lost`). |
@@ -1656,12 +1659,12 @@ sequenceDiagram
     participant DB as PostgreSQL
     participant WS as WebSocket
 
-    Device->>API: POST { pole_id, event: "power_lost", seq, ... }
+    Device->>API: POST { pole_id, event: "power_lost", boot_counter, seq, ... }
     API->>API: Validate (zod schema)
     API-->>Device: 202 Accepted
 
     API->>EP: Process event
-    EP->>EP: Dedup (device_id + seq)
+    EP->>EP: Dedup and order (device_id + boot_counter + seq)
     EP->>DB: INSERT telemetry_events (ON CONFLICT DO NOTHING)
     EP->>PSS: Forward processed event
 
@@ -1870,8 +1873,8 @@ stateDiagram-v2
 
 | Scenario | Behavior |
 |----------|----------|
-| Same `(device_id, seq)` posted twice | `EventPipeline` drops via `ON CONFLICT DO NOTHING`. `POST /api/telemetry` returns `202` both times. No state change. No duplicate fault/ticket. |
-| Same pole sends `power_lost` then `power_lost` again (different `seq`) | `PoleStateService` state is already `DARK`. No state transition. Localization is NOT re-invoked. |
+| Same `(device_id, boot_counter, seq)` posted twice | `EventPipeline` drops via `ON CONFLICT DO NOTHING`. `POST /api/telemetry` returns `202` both times. No state change. No duplicate fault/ticket. |
+| Same pole sends `power_lost` then `power_lost` again (a different ordered `(boot_counter, seq)` tuple) | `PoleStateService` state is already `DARK`. No state transition. Localization is NOT re-invoked. |
 
 ### Duplicate Simulator Requests
 
@@ -2070,7 +2073,7 @@ The following APIs are intentionally **not in scope** for this assignment. They 
 
 **Given:** Fault already detected for DT D-0112.
 
-**When:** Same `power_lost` event arrives 5 more times (same `device_id`, same `seq`).
+**When:** Same `power_lost` event arrives 5 more times (same `device_id`, `boot_counter`, and `seq`).
 
 **Then:**
 - All return `202 Accepted`.

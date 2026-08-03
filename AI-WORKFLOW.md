@@ -536,6 +536,45 @@ Phase 6 established deterministic noise filtering that future EventPipeline and 
 
 ---
 
+# Session 13 — Telemetry Stream Identity Review
+
+## Goal
+
+Resolve the contradiction between sequence resets on device reboot and duplicate detection based only on `device_id + seq` before telemetry ingestion implementation began.
+
+## Contradiction Discovered
+
+The firmware resets `seq` after every boot, while the frozen database and API contracts treated `(device_id, seq)` as globally unique. A new event after reboot could therefore be indistinguishable from a delayed retry from an earlier device generation.
+
+## Engineering Review
+
+AI re-read the frozen specifications and assignment documents, traced the behavior through persistence, ingest, pole state, simulator, localization, tests, and future phases, and performed an indistinguishability analysis for lost boot events and delayed retries.
+
+## Alternatives Evaluated
+
+- `device_id + seq` uniqueness.
+- Server-managed device sessions.
+- Timestamps or device time as ordering and session evidence.
+- A firmware-provided telemetry stream discriminator.
+
+## Why Backend-Only Resolution Is Impossible
+
+With no generation identifier, a new post-reboot event following a lost boot and a delayed retry from the prior session can have identical backend-visible fields. `received_at` describes delivery time rather than source identity, and device timestamps are explicitly untrusted for ordering. No backend-only rule can correctly accept the first event and reject the second in every permitted scenario.
+
+## Accepted Correction
+
+The human owner accepted `boot_counter`: a persistent device reboot counter carried by every telemetry event. The canonical identity is `(device_id, boot_counter, seq)` and `(boot_counter, seq)` is strictly monotonic in lexicographic order for a device.
+
+## Rejected Example
+
+Server-managed sessions were rejected because a lost or delayed boot cannot be deterministically associated with the correct server session. Persisting session state survives a server restart but cannot recreate protocol information that the device did not send.
+
+## Outcome
+
+The frozen specifications were corrected before Phase 7 implementation. No code, source files, or tests were changed during this review.
+
+---
+
 # Examples of AI Output That Was Rejected
 
 ## Example 1

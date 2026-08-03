@@ -510,3 +510,27 @@ Treat poles without devices as `OFFLINE`.
 ## Why Rejected
 
 This conflates hardware absence with hardware failure and would complicate telemetry processing, operator reasoning, and future device-health monitoring.
+
+---
+
+# D-020 — Telemetry Stream Identity
+
+**Status:** Accepted
+
+## Decision
+
+Telemetry identity is `(device_id, boot_counter, seq)`. Each device persists a `boot_counter` that increments once per reboot; `seq` resets to 0 within that counter. For one device, `(boot_counter, seq)` is strictly monotonic in lexicographic order. Duplicate detection and stale retry rejection use this ordered tuple, and `pole_states` persists `last_boot_counter` with `last_seq` for restart recovery.
+
+## Reason
+
+The assignment protocol resets `seq` after boot while also requiring at-least-once delivery and stale-retry rejection. `device_id + seq` cannot distinguish a new post-boot event from a delayed event in an earlier device generation. The explicit stream discriminator makes the distinction deterministic without trusting device time or arrival time.
+
+## Alternatives Considered
+
+- `device_id + seq`.
+- Server-managed device sessions.
+- Timestamps or device time as a session discriminator.
+
+## Why Rejected
+
+`device_id + seq` collides after every reboot. Server-managed sessions cannot deterministically distinguish a lost or delayed boot from a stale retry, and server restart does not restore missing protocol information. `received_at` describes delivery rather than source-event identity, while device time has documented clock skew and is not trusted for ordering.
