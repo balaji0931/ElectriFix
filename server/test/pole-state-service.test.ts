@@ -13,6 +13,7 @@ const initialState: PoleState = {
   energized: "UNKNOWN",
   lastHeartbeatAt: null,
   lastEventAt: null,
+  lastBootCounter: null,
   lastSeq: null,
   firmwareVersion: null,
   deviceHealth: "HEALTHY",
@@ -54,6 +55,7 @@ describe("PoleStateService", () => {
 
     expect(state).toMatchObject({
       energized: "LIVE",
+      lastBootCounter: 0,
       lastSeq: 7,
       firmwareVersion: "1.4.2",
       batteryMv: 3600,
@@ -94,10 +96,33 @@ describe("PoleStateService", () => {
     await service.rebuildCache();
 
     await service.applyEvent(event("power_restored", 9));
-    const bootState = await service.applyEvent(event("boot", 1));
+    const bootState = await service.applyEvent(event("boot", 1, 1));
 
     expect(bootState.energized).toBe("LIVE");
+    expect(bootState.lastBootCounter).toBe(1);
     expect(bootState.lastSeq).toBe(1);
+  });
+
+  it("orders telemetry by boot counter and sequence", async () => {
+    const store = new MemoryPoleStateStore([
+      { ...initialState, energized: "LIVE" },
+    ]);
+    const service = new PoleStateService(store);
+    await service.rebuildCache();
+
+    await service.applyEvent(event("heartbeat", 9, 2));
+    await service.applyEvent(event("power_lost", 8, 2));
+    expect(service.getPoleState("P-001")?.energized).toBe("LIVE");
+
+    await service.applyEvent(event("power_lost", 0, 3));
+    expect(service.getPoleState("P-001")).toMatchObject({
+      energized: "DARK",
+      lastBootCounter: 3,
+      lastSeq: 0,
+    });
+
+    await service.applyEvent(event("power_restored", 99, 2));
+    expect(service.getPoleState("P-001")?.energized).toBe("DARK");
   });
 
   it("does not publish a duplicate transition when an event retains the same logical state", async () => {
@@ -204,10 +229,12 @@ class MemoryPoleStateStore implements PoleStateStore {
 function event(
   eventType: ProcessedTelemetryEvent["event"],
   seq: number,
+  bootCounter = 0,
 ): ProcessedTelemetryEvent {
   return {
     poleId: "P-001",
     event: eventType,
+    bootCounter,
     seq,
     receivedAt: new Date("2026-08-05T10:05:00.000Z"),
     batteryMv: 3600,

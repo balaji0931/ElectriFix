@@ -149,6 +149,7 @@ export function generateSeedData(seedTime: Date): SeedData {
         energized: "UNKNOWN",
         lastHeartbeatAt: null,
         lastEventAt: null,
+        lastBootCounter: null,
         lastSeq: null,
         firmwareVersion: null,
         deviceHealth: hasDevice ? "HEALTHY" : "NO_DEVICE",

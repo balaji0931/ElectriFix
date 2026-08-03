@@ -56,6 +56,10 @@ export class PoleStateService {
       throw new Error(`Pole state is not loaded for pole ${event.poleId}`);
     }
 
+    if (compareStreamPosition(event, current) <= 0) {
+      return clonePoleState(current);
+    }
+
     const next = applyEventToState(current, event);
     const update = toPersistenceUpdate(next);
 
@@ -128,12 +132,28 @@ function applyEventToState(
     energized,
     lastHeartbeatAt: cloneDate(heartbeatAt),
     lastEventAt: cloneDate(event.receivedAt),
+    lastBootCounter: event.bootCounter,
     lastSeq: event.seq,
     firmwareVersion: event.firmware ?? current.firmwareVersion,
     batteryMv: event.batteryMv ?? current.batteryMv,
     rssi: event.rssi ?? current.rssi,
     updatedAt: cloneRequiredDate(event.receivedAt),
   });
+}
+
+function compareStreamPosition(
+  event: ProcessedTelemetryEvent,
+  state: PoleState,
+): number {
+  if (state.lastBootCounter === null || state.lastSeq === null) {
+    return 1;
+  }
+
+  if (event.bootCounter !== state.lastBootCounter) {
+    return event.bootCounter - state.lastBootCounter;
+  }
+
+  return event.seq - state.lastSeq;
 }
 
 function energizedForEvent(
@@ -156,6 +176,7 @@ function toPersistenceUpdate(state: PoleState): PoleStatePersistenceUpdate {
     energized: state.energized,
     lastHeartbeatAt: cloneDate(state.lastHeartbeatAt),
     lastEventAt: cloneDate(state.lastEventAt),
+    lastBootCounter: state.lastBootCounter,
     lastSeq: state.lastSeq,
     firmwareVersion: state.firmwareVersion,
     batteryMv: state.batteryMv,

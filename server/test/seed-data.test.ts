@@ -62,6 +62,12 @@ describe("Phase 1 seed data", () => {
     expect(
       seedData.poleStates.every((state) => state.lastEventAt === null),
     ).toBe(true);
+    expect(
+      seedData.poleStates.every((state) => state.lastBootCounter === null),
+    ).toBe(true);
+    expect(seedData.poleStates.every((state) => state.lastSeq === null)).toBe(
+      true,
+    );
   });
 
   it("includes the documented pincode gap", () => {

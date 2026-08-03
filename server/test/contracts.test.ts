@@ -100,12 +100,24 @@ describe("shared domain contracts", () => {
         event: "heartbeat",
         energized: true,
         ts: "2026-08-05T00:00:00Z",
+        boot_counter: 0,
         seq: 0,
         battery_mv: 3600,
         rssi: -72,
         fw: "1.4.2",
       }).success,
     ).toBe(true);
+
+    expect(
+      telemetryEventSchema.safeParse({
+        device_id: "DEV-001",
+        pole_id: "P-001",
+        event: "heartbeat",
+        energized: true,
+        ts: "2026-08-05T00:00:00Z",
+        seq: 0,
+      }).success,
+    ).toBe(false);
   });
 
   it("uses the documented ticket assignment and action request shapes", () => {

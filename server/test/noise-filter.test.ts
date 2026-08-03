@@ -172,6 +172,7 @@ function poleState(overrides: Partial<PoleState> = {}): PoleState {
     energized: "LIVE",
     lastHeartbeatAt: new Date("2026-08-05T09:45:00.000Z"),
     lastEventAt: new Date("2026-08-05T09:45:00.000Z"),
+    lastBootCounter: 0,
     lastSeq: 1,
     firmwareVersion: "1.4.2",
     deviceHealth: "HEALTHY",

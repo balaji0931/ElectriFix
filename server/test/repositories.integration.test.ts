@@ -83,6 +83,7 @@ integrationDescribe("Phase 3 repositories and startup bootstrap", () => {
     expect(Object.isFrozen(snapshot)).toBe(true);
     expect(Object.isFrozen(snapshot.poles)).toBe(true);
     expect(Object.isFrozen(snapshot.poleStates)).toBe(true);
+    expect(snapshot.poleStates[0]?.lastBootCounter).toBeNull();
   });
 
   it("persists a pole state update without changing registry data", async () => {
@@ -91,16 +92,19 @@ integrationDescribe("Phase 3 repositories and startup bootstrap", () => {
     expect(original).toBeDefined();
 
     const updated = await poleRepository.updatePoleState("P-000001", {
+      lastBootCounter: 4,
       lastSeq: 42,
       updatedAt: createdAt,
     });
 
+    expect(updated?.lastBootCounter).toBe(4);
     expect(updated?.lastSeq).toBe(42);
 
     await poleRepository.updatePoleState("P-000001", {
       energized: original!.energized,
       lastHeartbeatAt: original!.lastHeartbeatAt,
       lastEventAt: original!.lastEventAt,
+      lastBootCounter: original!.lastBootCounter,
       lastSeq: original!.lastSeq,
       firmwareVersion: original!.firmwareVersion,
       deviceHealth: original!.deviceHealth,
@@ -119,6 +123,7 @@ integrationDescribe("Phase 3 repositories and startup bootstrap", () => {
       event: "heartbeat",
       energized: true,
       deviceTs: createdAt,
+      bootCounter: 4,
       seq: 1,
       receivedAt: createdAt,
     };
@@ -132,6 +137,13 @@ integrationDescribe("Phase 3 repositories and startup bootstrap", () => {
         id: "018f8acb-0000-7000-8000-000000000302",
       }),
     ).toBeUndefined();
+    expect(
+      await telemetryRepository.insertTelemetryEvent({
+        ...event,
+        id: "018f8acb-0000-7000-8000-000000000303",
+        bootCounter: 5,
+      }),
+    ).toMatchObject({ id: "018f8acb-0000-7000-8000-000000000303" });
   });
 
   it("loads the seeded scheduled-outage feed through the read-only client", async () => {

@@ -80,6 +80,7 @@ export const telemetryEvents = pgTable(
     event: text("event").notNull(),
     energized: boolean("energized").notNull(),
     deviceTs: timestamp("device_ts").notNull(),
+    bootCounter: integer("boot_counter").notNull(),
     seq: integer("seq").notNull(),
     batteryMv: integer("battery_mv"),
     rssi: integer("rssi"),
@@ -87,7 +88,11 @@ export const telemetryEvents = pgTable(
     receivedAt: timestamp("received_at").notNull(),
   },
   (table) => [
-    uniqueIndex("uq_device_seq").on(table.deviceId, table.seq),
+    uniqueIndex("uq_device_boot_counter_seq").on(
+      table.deviceId,
+      table.bootCounter,
+      table.seq,
+    ),
     index("idx_telem_pole_received").on(
       table.poleId,
       sql`${table.receivedAt} DESC`,
@@ -109,6 +114,7 @@ export const poleStates = pgTable(
     energized: text("energized").notNull(),
     lastHeartbeatAt: timestamp("last_heartbeat_at"),
     lastEventAt: timestamp("last_event_at"),
+    lastBootCounter: integer("last_boot_counter"),
     lastSeq: integer("last_seq"),
     firmwareVersion: text("firmware_version"),
     deviceHealth: text("device_health").notNull(),

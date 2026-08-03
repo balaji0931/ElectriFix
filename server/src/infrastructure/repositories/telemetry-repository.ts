@@ -18,7 +18,11 @@ export class TelemetryRepository {
       .insert(telemetryEvents)
       .values(event)
       .onConflictDoNothing({
-        target: [telemetryEvents.deviceId, telemetryEvents.seq],
+        target: [
+          telemetryEvents.deviceId,
+          telemetryEvents.bootCounter,
+          telemetryEvents.seq,
+        ],
       })
       .returning();
 

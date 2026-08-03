@@ -8,6 +8,7 @@ export const telemetryEventSchema = z.object({
   event: z.enum(telemetryEventTypes),
   energized: z.boolean(),
   ts: z.iso.datetime(),
+  boot_counter: z.int().nonnegative(),
   seq: z.int().nonnegative(),
   battery_mv: z.int().optional(),
   rssi: z.int().optional(),

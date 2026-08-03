@@ -41,6 +41,7 @@ integrationDescribe("PoleStateService persistence", () => {
     await service.applyEvent({
       poleId: "P-000001",
       event: "power_lost",
+      bootCounter: 3,
       seq: 23,
       receivedAt,
       firmware: "1.4.2",
@@ -51,6 +52,7 @@ integrationDescribe("PoleStateService persistence", () => {
     const persisted = await repository.findPoleState("P-000001");
     expect(persisted).toMatchObject({
       energized: "DARK",
+      lastBootCounter: 3,
       lastSeq: 23,
       firmwareVersion: "1.4.2",
       batteryMv: 3600,
@@ -58,6 +60,7 @@ integrationDescribe("PoleStateService persistence", () => {
     });
     expect(service.getPoleState("P-000001")).toMatchObject({
       energized: "DARK",
+      lastBootCounter: 3,
       lastSeq: 23,
     });
 
@@ -65,6 +68,7 @@ integrationDescribe("PoleStateService persistence", () => {
       energized: original!.energized,
       lastHeartbeatAt: original!.lastHeartbeatAt,
       lastEventAt: original!.lastEventAt,
+      lastBootCounter: original!.lastBootCounter,
       lastSeq: original!.lastSeq,
       firmwareVersion: original!.firmwareVersion,
       batteryMv: original!.batteryMv,

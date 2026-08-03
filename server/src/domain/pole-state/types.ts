@@ -9,6 +9,7 @@ export interface PoleState {
   readonly energized: EnergizedState;
   readonly lastHeartbeatAt: Date | null;
   readonly lastEventAt: Date | null;
+  readonly lastBootCounter: number | null;
   readonly lastSeq: number | null;
   readonly firmwareVersion: string | null;
   readonly deviceHealth: DeviceHealthStatus;
@@ -22,6 +23,7 @@ export interface PoleStatePersistenceUpdate {
   energized?: EnergizedState;
   lastHeartbeatAt?: Date | null;
   lastEventAt?: Date | null;
+  lastBootCounter?: number | null;
   lastSeq?: number | null;
   firmwareVersion?: string | null;
   batteryMv?: number | null;
@@ -40,6 +42,7 @@ export interface PoleStateStore {
 export interface ProcessedTelemetryEvent {
   readonly poleId: string;
   readonly event: TelemetryEventType;
+  readonly bootCounter: number;
   readonly seq: number;
   readonly receivedAt: Date;
   readonly batteryMv?: number;

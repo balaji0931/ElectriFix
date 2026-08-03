@@ -1,0 +1,1082 @@
+{
+  "id": "da98edac-6ee9-4816-94be-45993acdcfd6",
+  "prevId": "7d6df8a8-9623-4ed4-af00-bb495ede5412",
+  "version": "7",
+  "dialect": "postgresql",
+  "tables": {
+    "public.distribution_transformers": {
+      "name": "distribution_transformers",
+      "schema": "",
+      "columns": {
+        "dt_id": {
+          "name": "dt_id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "feeder_id": {
+          "name": "feeder_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "lat": {
+          "name": "lat",
+          "type": "double precision",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "lon": {
+          "name": "lon",
+          "type": "double precision",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "capacity_kva": {
+          "name": "capacity_kva",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "households_served": {
+          "name": "households_served",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "has_recorded_topology": {
+          "name": "has_recorded_topology",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "distribution_transformers_feeder_id_feeders_feeder_id_fk": {
+          "name": "distribution_transformers_feeder_id_feeders_feeder_id_fk",
+          "tableFrom": "distribution_transformers",
+          "tableTo": "feeders",
+          "columnsFrom": ["feeder_id"],
+          "columnsTo": ["feeder_id"],
+          "onDelete": "restrict",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.faults": {
+      "name": "faults",
+      "schema": "",
+      "columns": {
+        "fault_id": {
+          "name": "fault_id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "dt_id": {
+          "name": "dt_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "feeder_id": {
+          "name": "feeder_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "fault_type": {
+          "name": "fault_type",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "status": {
+          "name": "status",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'active'"
+        },
+        "span_pole_a": {
+          "name": "span_pole_a",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "span_pole_b": {
+          "name": "span_pole_b",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "lat": {
+          "name": "lat",
+          "type": "double precision",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "lon": {
+          "name": "lon",
+          "type": "double precision",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "pincode": {
+          "name": "pincode",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "affected_pole_count": {
+          "name": "affected_pole_count",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "confidence_level": {
+          "name": "confidence_level",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "topology_source": {
+          "name": "topology_source",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "evidence": {
+          "name": "evidence",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "ai_summary": {
+          "name": "ai_summary",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "merged_into_fault_id": {
+          "name": "merged_into_fault_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "detected_at": {
+          "name": "detected_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "resolved_at": {
+          "name": "resolved_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {
+        "idx_faults_status": {
+          "name": "idx_faults_status",
+          "columns": [
+            {
+              "expression": "status",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "where": "\"faults\".\"status\" = 'active'",
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "idx_faults_dt": {
+          "name": "idx_faults_dt",
+          "columns": [
+            {
+              "expression": "dt_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "idx_faults_detected": {
+          "name": "idx_faults_detected",
+          "columns": [
+            {
+              "expression": "\"detected_at\" DESC",
+              "asc": true,
+              "isExpression": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "faults_dt_id_distribution_transformers_dt_id_fk": {
+          "name": "faults_dt_id_distribution_transformers_dt_id_fk",
+          "tableFrom": "faults",
+          "tableTo": "distribution_transformers",
+          "columnsFrom": ["dt_id"],
+          "columnsTo": ["dt_id"],
+          "onDelete": "restrict",
+          "onUpdate": "no action"
+        },
+        "faults_feeder_id_feeders_feeder_id_fk": {
+          "name": "faults_feeder_id_feeders_feeder_id_fk",
+          "tableFrom": "faults",
+          "tableTo": "feeders",
+          "columnsFrom": ["feeder_id"],
+          "columnsTo": ["feeder_id"],
+          "onDelete": "restrict",
+          "onUpdate": "no action"
+        },
+        "faults_span_pole_a_poles_pole_id_fk": {
+          "name": "faults_span_pole_a_poles_pole_id_fk",
+          "tableFrom": "faults",
+          "tableTo": "poles",
+          "columnsFrom": ["span_pole_a"],
+          "columnsTo": ["pole_id"],
+          "onDelete": "restrict",
+          "onUpdate": "no action"
+        },
+        "faults_span_pole_b_poles_pole_id_fk": {
+          "name": "faults_span_pole_b_poles_pole_id_fk",
+          "tableFrom": "faults",
+          "tableTo": "poles",
+          "columnsFrom": ["span_pole_b"],
+          "columnsTo": ["pole_id"],
+          "onDelete": "restrict",
+          "onUpdate": "no action"
+        },
+        "faults_merged_into_fault_id_faults_fault_id_fk": {
+          "name": "faults_merged_into_fault_id_faults_fault_id_fk",
+          "tableFrom": "faults",
+          "tableTo": "faults",
+          "columnsFrom": ["merged_into_fault_id"],
+          "columnsTo": ["fault_id"],
+          "onDelete": "set null",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {
+        "ck_fault_type": {
+          "name": "ck_fault_type",
+          "value": "\"faults\".\"fault_type\" IN ('span', 'dt', 'feeder')"
+        },
+        "ck_fault_status": {
+          "name": "ck_fault_status",
+          "value": "\"faults\".\"status\" IN ('active', 'resolved', 'merged')"
+        },
+        "ck_confidence": {
+          "name": "ck_confidence",
+          "value": "\"faults\".\"confidence_level\" IN ('HIGH', 'MEDIUM', 'LOW')"
+        },
+        "ck_topology_source": {
+          "name": "ck_topology_source",
+          "value": "\"faults\".\"topology_source\" IN ('RECORDED', 'INFERRED', 'FALLBACK')"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "public.feeders": {
+      "name": "feeders",
+      "schema": "",
+      "columns": {
+        "feeder_id": {
+          "name": "feeder_id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "substation_id": {
+          "name": "substation_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "name": {
+          "name": "name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.pole_states": {
+      "name": "pole_states",
+      "schema": "",
+      "columns": {
+        "pole_id": {
+          "name": "pole_id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "energized": {
+          "name": "energized",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "last_heartbeat_at": {
+          "name": "last_heartbeat_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "last_event_at": {
+          "name": "last_event_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "last_boot_counter": {
+          "name": "last_boot_counter",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "last_seq": {
+          "name": "last_seq",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "firmware_version": {
+          "name": "firmware_version",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "device_health": {
+          "name": "device_health",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "has_device": {
+          "name": "has_device",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "battery_mv": {
+          "name": "battery_mv",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "rssi": {
+          "name": "rssi",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "pole_states_pole_id_poles_pole_id_fk": {
+          "name": "pole_states_pole_id_poles_pole_id_fk",
+          "tableFrom": "pole_states",
+          "tableTo": "poles",
+          "columnsFrom": ["pole_id"],
+          "columnsTo": ["pole_id"],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {
+        "ck_energized_status": {
+          "name": "ck_energized_status",
+          "value": "\"pole_states\".\"energized\" IN ('LIVE', 'DARK', 'PRESUMED_DARK', 'UNKNOWN')"
+        },
+        "ck_device_health": {
+          "name": "ck_device_health",
+          "value": "\"pole_states\".\"device_health\" IN ('NO_DEVICE', 'HEALTHY', 'OFFLINE', 'DEGRADED')"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "public.poles": {
+      "name": "poles",
+      "schema": "",
+      "columns": {
+        "pole_id": {
+          "name": "pole_id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "lat": {
+          "name": "lat",
+          "type": "double precision",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "lon": {
+          "name": "lon",
+          "type": "double precision",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "feeder_id": {
+          "name": "feeder_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "dt_id": {
+          "name": "dt_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "seq_on_line": {
+          "name": "seq_on_line",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "parent_pole_id": {
+          "name": "parent_pole_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "pole_type": {
+          "name": "pole_type",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "ward": {
+          "name": "ward",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "pincode": {
+          "name": "pincode",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "device_id": {
+          "name": "device_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {
+        "idx_poles_dt": {
+          "name": "idx_poles_dt",
+          "columns": [
+            {
+              "expression": "dt_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "idx_poles_feeder": {
+          "name": "idx_poles_feeder",
+          "columns": [
+            {
+              "expression": "feeder_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "idx_poles_parent": {
+          "name": "idx_poles_parent",
+          "columns": [
+            {
+              "expression": "parent_pole_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "idx_poles_device": {
+          "name": "idx_poles_device",
+          "columns": [
+            {
+              "expression": "device_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "poles_feeder_id_feeders_feeder_id_fk": {
+          "name": "poles_feeder_id_feeders_feeder_id_fk",
+          "tableFrom": "poles",
+          "tableTo": "feeders",
+          "columnsFrom": ["feeder_id"],
+          "columnsTo": ["feeder_id"],
+          "onDelete": "restrict",
+          "onUpdate": "no action"
+        },
+        "poles_dt_id_distribution_transformers_dt_id_fk": {
+          "name": "poles_dt_id_distribution_transformers_dt_id_fk",
+          "tableFrom": "poles",
+          "tableTo": "distribution_transformers",
+          "columnsFrom": ["dt_id"],
+          "columnsTo": ["dt_id"],
+          "onDelete": "restrict",
+          "onUpdate": "no action"
+        },
+        "poles_parent_pole_id_poles_pole_id_fk": {
+          "name": "poles_parent_pole_id_poles_pole_id_fk",
+          "tableFrom": "poles",
+          "tableTo": "poles",
+          "columnsFrom": ["parent_pole_id"],
+          "columnsTo": ["pole_id"],
+          "onDelete": "set null",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.scheduled_outages": {
+      "name": "scheduled_outages",
+      "schema": "",
+      "columns": {
+        "outage_id": {
+          "name": "outage_id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "scope": {
+          "name": "scope",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "target_id": {
+          "name": "target_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "scheduled_start": {
+          "name": "scheduled_start",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "scheduled_end": {
+          "name": "scheduled_end",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "reason": {
+          "name": "reason",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {
+        "idx_outages_time": {
+          "name": "idx_outages_time",
+          "columns": [
+            {
+              "expression": "scheduled_start",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "scheduled_end",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "idx_outages_target": {
+          "name": "idx_outages_target",
+          "columns": [
+            {
+              "expression": "scope",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "target_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {
+        "ck_outage_scope": {
+          "name": "ck_outage_scope",
+          "value": "\"scheduled_outages\".\"scope\" IN ('feeder', 'dt')"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "public.telemetry_events": {
+      "name": "telemetry_events",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "device_id": {
+          "name": "device_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "pole_id": {
+          "name": "pole_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "event": {
+          "name": "event",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "energized": {
+          "name": "energized",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "device_ts": {
+          "name": "device_ts",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "boot_counter": {
+          "name": "boot_counter",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "seq": {
+          "name": "seq",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "battery_mv": {
+          "name": "battery_mv",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "rssi": {
+          "name": "rssi",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "firmware": {
+          "name": "firmware",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "received_at": {
+          "name": "received_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {
+        "uq_device_boot_counter_seq": {
+          "name": "uq_device_boot_counter_seq",
+          "columns": [
+            {
+              "expression": "device_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "boot_counter",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "seq",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "idx_telem_pole_received": {
+          "name": "idx_telem_pole_received",
+          "columns": [
+            {
+              "expression": "pole_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "\"received_at\" DESC",
+              "asc": true,
+              "isExpression": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "idx_telem_received": {
+          "name": "idx_telem_received",
+          "columns": [
+            {
+              "expression": "\"received_at\" DESC",
+              "asc": true,
+              "isExpression": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "telemetry_events_pole_id_poles_pole_id_fk": {
+          "name": "telemetry_events_pole_id_poles_pole_id_fk",
+          "tableFrom": "telemetry_events",
+          "tableTo": "poles",
+          "columnsFrom": ["pole_id"],
+          "columnsTo": ["pole_id"],
+          "onDelete": "restrict",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {
+        "ck_event_type": {
+          "name": "ck_event_type",
+          "value": "\"telemetry_events\".\"event\" IN ('heartbeat', 'power_lost', 'power_restored', 'boot')"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "public.tickets": {
+      "name": "tickets",
+      "schema": "",
+      "columns": {
+        "ticket_id": {
+          "name": "ticket_id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "fault_id": {
+          "name": "fault_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "status": {
+          "name": "status",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "assigned_crew": {
+          "name": "assigned_crew",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "operator_notes": {
+          "name": "operator_notes",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "rejection_count": {
+          "name": "rejection_count",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 0
+        },
+        "rejection_reason": {
+          "name": "rejection_reason",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "detected_at": {
+          "name": "detected_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "acknowledged_at": {
+          "name": "acknowledged_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "crew_assigned_at": {
+          "name": "crew_assigned_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "resolved_at": {
+          "name": "resolved_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "verified_at": {
+          "name": "verified_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "closed_at": {
+          "name": "closed_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {
+        "uq_ticket_fault": {
+          "name": "uq_ticket_fault",
+          "columns": [
+            {
+              "expression": "fault_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "idx_tickets_status": {
+          "name": "idx_tickets_status",
+          "columns": [
+            {
+              "expression": "status",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "where": "\"tickets\".\"status\" NOT IN ('verified', 'closed')",
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "idx_tickets_fault": {
+          "name": "idx_tickets_fault",
+          "columns": [
+            {
+              "expression": "fault_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "tickets_fault_id_faults_fault_id_fk": {
+          "name": "tickets_fault_id_faults_fault_id_fk",
+          "tableFrom": "tickets",
+          "tableTo": "faults",
+          "columnsFrom": ["fault_id"],
+          "columnsTo": ["fault_id"],
+          "onDelete": "restrict",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {
+        "ck_ticket_status": {
+          "name": "ck_ticket_status",
+          "value": "\"tickets\".\"status\" IN ('detected', 'acknowledged', 'crew_assigned', 'resolved', 'verified', 'closed')"
+        }
+      },
+      "isRLSEnabled": false
+    }
+  },
+  "enums": {},
+  "schemas": {},
+  "sequences": {},
+  "roles": {},
+  "policies": {},
+  "views": {},
+  "_meta": {
+    "columns": {},
+    "schemas": {},
+    "tables": {}
+  }
+}

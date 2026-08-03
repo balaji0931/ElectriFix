@@ -65,7 +65,7 @@ integrationDescribe("Phase 1 PostgreSQL migration and seed", () => {
     expect(outage.rows[0]?.matches_expected_window).toBe(true);
   });
 
-  it("enforces representative enum and duplicate-telemetry constraints", async () => {
+  it("enforces representative enum and telemetry stream identity constraints", async () => {
     await expect(
       db.execute(
         sql`INSERT INTO pole_states (pole_id, energized, device_health, has_device, updated_at)
@@ -74,15 +74,22 @@ integrationDescribe("Phase 1 PostgreSQL migration and seed", () => {
     ).rejects.toThrow();
 
     await db.execute(
-      sql`INSERT INTO telemetry_events (id, device_id, pole_id, event, energized, device_ts, seq, received_at)
-          VALUES ('018f8acb-0000-7000-8000-000000000001', 'DEV-000001', 'P-000001', 'heartbeat', true, NOW(), 1, NOW())`,
+      sql`INSERT INTO telemetry_events (id, device_id, pole_id, event, energized, device_ts, boot_counter, seq, received_at)
+          VALUES ('018f8acb-0000-7000-8000-000000000001', 'DEV-000001', 'P-000001', 'heartbeat', true, NOW(), 3, 1, NOW())`,
     );
 
     await expect(
       db.execute(
-        sql`INSERT INTO telemetry_events (id, device_id, pole_id, event, energized, device_ts, seq, received_at)
-            VALUES ('018f8acb-0000-7000-8000-000000000002', 'DEV-000001', 'P-000001', 'heartbeat', true, NOW(), 1, NOW())`,
+        sql`INSERT INTO telemetry_events (id, device_id, pole_id, event, energized, device_ts, boot_counter, seq, received_at)
+            VALUES ('018f8acb-0000-7000-8000-000000000002', 'DEV-000001', 'P-000001', 'heartbeat', true, NOW(), 3, 1, NOW())`,
       ),
     ).rejects.toThrow();
+
+    await expect(
+      db.execute(
+        sql`INSERT INTO telemetry_events (id, device_id, pole_id, event, energized, device_ts, boot_counter, seq, received_at)
+            VALUES ('018f8acb-0000-7000-8000-000000000003', 'DEV-000001', 'P-000001', 'heartbeat', true, NOW(), 4, 1, NOW())`,
+      ),
+    ).resolves.toBeDefined();
   });
 });
