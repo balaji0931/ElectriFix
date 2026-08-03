@@ -4,8 +4,11 @@ import { loadEnvironment } from "./config/env.js";
 import { PoleStateService } from "./domain/pole-state/pole-state-service.js";
 import { bootstrapStartupState } from "./infrastructure/db/bootstrap.js";
 import { initializeDatabase } from "./infrastructure/db/startup.js";
+import { EventPipeline } from "./infrastructure/event-pipeline.js";
 import { NetworkRepository } from "./infrastructure/repositories/network-repository.js";
 import { PoleRepository } from "./infrastructure/repositories/pole-repository.js";
+import { TelemetryRepository } from "./infrastructure/repositories/telemetry-repository.js";
+import { IngestTelemetry } from "./application/ingest-telemetry.js";
 import { createApp } from "./presentation/app.js";
 
 const environment = loadEnvironment();
@@ -19,6 +22,13 @@ const startupSnapshot = await bootstrapStartupState(
 );
 const poleStateService = new PoleStateService(poleRepository);
 await poleStateService.rebuildCache();
+const eventPipeline = new EventPipeline(
+  startupSnapshot,
+  new TelemetryRepository(database.db),
+  poleStateService,
+  logger,
+);
+const ingestTelemetry = new IngestTelemetry(eventPipeline);
 const startedAt = Date.now();
 
 const app = createApp({
@@ -27,6 +37,7 @@ const app = createApp({
   },
   startedAt,
   version: environment.APP_VERSION,
+  ingestTelemetry,
 });
 
 const server = app.listen(environment.PORT, () => {
@@ -43,6 +54,7 @@ const server = app.listen(environment.PORT, () => {
 async function shutDown() {
   logger.info("ElectriFix server stopping");
   server.close(async () => {
+    eventPipeline.dispose();
     await database.pool.end();
     process.exit(0);
   });

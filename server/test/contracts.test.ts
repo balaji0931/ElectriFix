@@ -70,6 +70,7 @@ describe("shared domain contracts", () => {
       "VALIDATION_ERROR",
       "INTERNAL_ERROR",
       "SERVICE_UNAVAILABLE",
+      "PIPELINE_BUFFER_FULL",
     ]);
   });
 

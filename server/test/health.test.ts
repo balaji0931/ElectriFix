@@ -3,6 +3,11 @@ import { describe, expect, it, vi } from "vitest";
 
 import { createApp } from "../src/presentation/app.js";
 
+const ingestTelemetry = {
+  ingest: vi.fn(),
+  ingestBatch: vi.fn(),
+};
+
 describe("GET /api/health", () => {
   it("reports a healthy connected database", async () => {
     const checkDatabase = vi.fn().mockResolvedValue(undefined);
@@ -10,6 +15,7 @@ describe("GET /api/health", () => {
       checkDatabase,
       startedAt: Date.now() - 3_500,
       version: "1.0.0",
+      ingestTelemetry: ingestTelemetry as never,
     });
 
     const response = await request(app).get("/api/health");
@@ -31,6 +37,7 @@ describe("GET /api/health", () => {
         .mockRejectedValue(new Error("database unavailable")),
       startedAt: Date.now(),
       version: "1.0.0",
+      ingestTelemetry: ingestTelemetry as never,
     });
 
     const response = await request(app).get("/api/health");

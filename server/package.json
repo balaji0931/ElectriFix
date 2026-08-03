@@ -20,6 +20,7 @@
     "express": "latest",
     "pg": "latest",
     "pino": "latest",
+    "uuid": "^14.0.1",
     "zod": "latest"
   },
   "devDependencies": {

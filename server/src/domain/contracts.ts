@@ -87,6 +87,7 @@ export const apiErrorCodes = [
   "VALIDATION_ERROR",
   "INTERNAL_ERROR",
   "SERVICE_UNAVAILABLE",
+  "PIPELINE_BUFFER_FULL",
 ] as const;
 export type ApiErrorCode = (typeof apiErrorCodes)[number];
 

@@ -575,6 +575,61 @@ The frozen specifications were corrected before Phase 7 implementation. No code,
 
 ---
 
+# Session 14 — Phase 7 EventPipeline
+
+## Goal
+
+Implement the production telemetry ingestion pipeline while preserving the approved ordering, buffering, persistence, and ownership boundaries.
+
+## Delegated to AI
+
+- Thin ingestion orchestrator.
+- Fixed FIFO ring buffer.
+- Tuple ordering using `(boot_counter, seq)`.
+- Admission-only batch counts.
+- UUIDv7 identifiers.
+- Pipeline-local tuple comparison.
+- Focused route, integration, and burst tests.
+
+## Human Review
+
+The following AI proposals were accepted:
+
+- Thin orchestration.
+- UUIDv7.
+- FIFO buffer.
+- 50 ms drain.
+- 8,192 capacity.
+- `503` overload response.
+- Admission-only batch semantics.
+- Pipeline-local lexicographic comparison.
+- Device-to-pole business validation.
+
+The following proposals were rejected:
+
+- Distributed transactions.
+- Retry queues.
+- Background recovery infrastructure.
+- Localization coupling.
+- WebSocket delivery.
+- Generic event bus.
+
+Post-review, a pending ordering cursor was found to persist beyond queue completion.
+
+Root cause: the temporary admission cursor was never cleared after processing.
+
+The approved correction was deliberately narrow: clear the pending cursor only when the completed tuple still matches the current pending cursor. This preserves protection for newer queued telemetry while restoring the durable pole-state cursor as the sole ordering authority after the queue drains.
+
+## Outcome
+
+Phase 7 produced the telemetry ingest path with UUIDv7 identifiers, tuple-aware duplicate and stale handling, device-to-pole validation, asynchronous FIFO admission, and focused route, integration, and burst coverage.
+
+The pending-cursor correction ensured that in-memory admission state exists only while queued telemetry remains. The focused A → B → C test verifies that a newer queued cursor remains while A and B finish, then is cleared when C completes.
+
+No new engineering decisions were required.
+
+---
+
 # Examples of AI Output That Was Rejected
 
 ## Example 1

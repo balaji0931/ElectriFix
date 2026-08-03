@@ -534,3 +534,58 @@ The assignment protocol resets `seq` after boot while also requiring at-least-on
 ## Why Rejected
 
 `device_id + seq` collides after every reboot. Server-managed sessions cannot deterministically distinguish a lost or delayed boot from a stale retry, and server restart does not restore missing protocol information. `received_at` describes delivery rather than source-event identity, while device time has documented clock skew and is not trusted for ordering.
+
+---
+
+D-021 — Telemetry Ingestion Pipeline Behavior
+
+Status:
+Accepted
+
+Context
+
+The ingestion pipeline must admit telemetry quickly while preserving deterministic
+ordering, duplicate handling, and restart safety without coupling ingestion to
+localization or ticket creation.
+
+Decision
+
+The EventPipeline is the sole ingestion orchestrator.
+
+Telemetry processing order is:
+
+1. Validate request
+2. Business validation
+3. Lexicographic tuple comparison using
+   (boot_counter, seq)
+4. Persist telemetry event
+5. Forward accepted event to PoleStateService
+6. Publish internal completion notification
+
+The pipeline performs tuple ordering using immutable PoleState snapshots.
+
+PoleStateService remains the sole owner of mutable pole state.
+
+Duplicate detection uses the database unique constraint:
+
+(device_id, boot_counter, seq)
+
+The ingestion buffer is an in-memory fixed-capacity FIFO ring buffer of 8,192
+events drained every 50 ms.
+
+Buffer overflow returns:
+
+HTTP 503
+PIPELINE_BUFFER_FULL
+
+The buffer never grows dynamically.
+
+Pending ordering cursors exist only while events remain queued and are removed
+after the final queued tuple completes.
+
+Consequences
+
+- deterministic ordering
+- no secondary ordering authority
+- durable ordering remains in pole_states
+- localization remains decoupled

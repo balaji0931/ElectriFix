@@ -1,4 +1,4 @@
-import { desc, eq } from "drizzle-orm";
+import { and, desc, eq } from "drizzle-orm";
 
 import type { Database } from "../db/client.js";
 import { telemetryEvents } from "../db/schema.js";
@@ -27,6 +27,26 @@ export class TelemetryRepository {
       .returning();
 
     return inserted;
+  }
+
+  async findTelemetryEventByTuple(
+    deviceId: string,
+    bootCounter: number,
+    seq: number,
+  ): Promise<TelemetryEventPersistenceModel | undefined> {
+    const [event] = await this.db
+      .select()
+      .from(telemetryEvents)
+      .where(
+        and(
+          eq(telemetryEvents.deviceId, deviceId),
+          eq(telemetryEvents.bootCounter, bootCounter),
+          eq(telemetryEvents.seq, seq),
+        ),
+      )
+      .limit(1);
+
+    return event;
   }
 
   listEventsForPole(poleId: string) {

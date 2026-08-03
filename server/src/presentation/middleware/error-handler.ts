@@ -7,8 +7,23 @@ export const errorHandler: ErrorRequestHandler = (
   next,
 ) => {
   void next;
-  const statusCode = error.statusCode === 503 ? 503 : 500;
+  const isMalformedJson = error instanceof SyntaxError && "body" in error;
+  const statusCode = isMalformedJson
+    ? 400
+    : error.statusCode === 503
+      ? 503
+      : 500;
   const code = statusCode === 503 ? "SERVICE_UNAVAILABLE" : "INTERNAL_ERROR";
+
+  if (isMalformedJson) {
+    return response.status(400).json({
+      error: {
+        code: "BAD_REQUEST",
+        message: "Malformed JSON request body",
+        timestamp: new Date().toISOString(),
+      },
+    });
+  }
 
   response.status(statusCode).json({
     error: {
