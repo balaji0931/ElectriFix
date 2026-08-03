@@ -498,6 +498,44 @@ Phase 5 established the runtime state owner that future EventPipeline and FaultL
 
 ---
 
+# Session 12 — Noise Filters and Scheduled Outage Suppression
+
+## Goal
+
+Implement deterministic false-positive controls before localization while preserving strict ownership boundaries between state management, filtering, and localization.
+
+## Delegated to AI
+
+- Debouncer.
+- DeadSensorDetector.
+- ScheduledOutageFilter.
+- ScheduledOutageClient.
+- Shared filter result contract.
+- Unit and integration tests.
+
+## Human Review
+
+Implementation paused before development to resolve:
+
+- Debouncer ownership
+- PRESUMED_DARK workflow
+- shared filter result contract
+- device health ownership
+
+The implementation was reviewed to ensure:
+
+- filters remain pure decision components
+- PoleStateService remains the only owner of mutable state
+- scheduled outages suppress but never create faults
+- dead sensor detection does not modify health
+- localization remains completely outside this phase
+
+## Outcome
+
+Phase 6 established deterministic noise filtering that future EventPipeline and FaultLocalizationEngine phases will consume without coupling filtering to state management or localization.
+
+---
+
 # Examples of AI Output That Was Rejected
 
 ## Example 1
@@ -621,6 +659,20 @@ The initial implementation considered updating device health from heartbeat even
 Device health transitions belong to later policy phases.
 
 Transition publication remains a framework-independent in-process contract so future layers can subscribe without introducing transport or infrastructure coupling.
+
+---
+
+## Example 11
+
+The initial implementation considered allowing Debouncer to directly invoke PoleStateService and update device health during dead sensor detection.
+
+### Reason Rejected
+
+Noise filters are pure decision components.
+
+Mutable state remains owned exclusively by PoleStateService.
+
+EventPipeline will orchestrate state changes in later phases.
 
 ---
 

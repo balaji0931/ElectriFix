@@ -145,6 +145,25 @@ describe("PoleStateService", () => {
     expect(state.deviceHealth).toBe("DEGRADED");
     expect(store.state("P-001")?.deviceHealth).toBe("DEGRADED");
   });
+
+  it("provides a persist-first presumed-dark transition for future orchestration", async () => {
+    const store = new MemoryPoleStateStore([
+      { ...initialState, energized: "LIVE" },
+    ]);
+    const service = new PoleStateService(store);
+    const listener = vi.fn();
+    service.subscribe(listener);
+    await service.rebuildCache();
+
+    await service.markPresumedDark(
+      "P-001",
+      new Date("2026-08-05T10:35:00.000Z"),
+    );
+
+    expect(store.state("P-001")?.energized).toBe("PRESUMED_DARK");
+    expect(service.getPoleState("P-001")?.energized).toBe("PRESUMED_DARK");
+    expect(listener).toHaveBeenCalledOnce();
+  });
 });
 
 class MemoryPoleStateStore implements PoleStateStore {

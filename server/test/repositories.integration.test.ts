@@ -9,6 +9,7 @@ import {
 import { runMigrations } from "../src/infrastructure/db/migrate.js";
 import { seedDatabase } from "../src/infrastructure/db/seed.js";
 import { faults, tickets } from "../src/infrastructure/db/schema.js";
+import { ScheduledOutageClient } from "../src/infrastructure/scheduled-outage-client.js";
 import { NetworkRepository } from "../src/infrastructure/repositories/network-repository.js";
 import { PoleRepository } from "../src/infrastructure/repositories/pole-repository.js";
 import { TelemetryRepository } from "../src/infrastructure/repositories/telemetry-repository.js";
@@ -25,6 +26,7 @@ integrationDescribe("Phase 3 repositories and startup bootstrap", () => {
   let poleRepository: PoleRepository;
   let telemetryRepository: TelemetryRepository;
   let ticketRepository: TicketRepository;
+  let scheduledOutageClient: ScheduledOutageClient;
 
   beforeAll(async () => {
     connection = createDatabaseConnection(testDatabaseUrl!);
@@ -35,6 +37,7 @@ integrationDescribe("Phase 3 repositories and startup bootstrap", () => {
     poleRepository = new PoleRepository(connection.db);
     telemetryRepository = new TelemetryRepository(connection.db);
     ticketRepository = new TicketRepository(connection.db);
+    scheduledOutageClient = new ScheduledOutageClient(networkRepository);
   });
 
   beforeEach(async () => {
@@ -129,6 +132,13 @@ integrationDescribe("Phase 3 repositories and startup bootstrap", () => {
         id: "018f8acb-0000-7000-8000-000000000302",
       }),
     ).toBeUndefined();
+  });
+
+  it("loads the seeded scheduled-outage feed through the read-only client", async () => {
+    const outages = await scheduledOutageClient.listScheduledOutages();
+
+    expect(outages).toHaveLength(15);
+    expect(outages[0]).toMatchObject({ outageId: "SO-001", scope: "dt" });
   });
 
   it("persists a pre-built fault and ticket atomically", async () => {

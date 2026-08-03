@@ -76,6 +76,38 @@ export class PoleStateService {
     return clonePoleState(next);
   }
 
+  async markPresumedDark(poleId: string, observedAt: Date): Promise<PoleState> {
+    const current = this.cache.get(poleId);
+    if (!current) {
+      throw new Error(`Pole state is not loaded for pole ${poleId}`);
+    }
+
+    if (current.energized !== "LIVE") {
+      return clonePoleState(current);
+    }
+
+    const next = Object.freeze({
+      ...current,
+      energized: "PRESUMED_DARK" as const,
+      updatedAt: cloneRequiredDate(observedAt),
+    });
+    const persisted = await this.store.updatePoleState(
+      poleId,
+      toPersistenceUpdate(next),
+    );
+    if (persisted === undefined) {
+      throw new Error(`Pole state does not exist for pole ${poleId}`);
+    }
+
+    this.cache.set(poleId, next);
+    this.publish({
+      previousState: clonePoleState(current),
+      currentState: clonePoleState(next),
+    });
+
+    return clonePoleState(next);
+  }
+
   private publish(transition: PoleStateTransition): void {
     for (const listener of this.listeners) {
       listener(transition);
