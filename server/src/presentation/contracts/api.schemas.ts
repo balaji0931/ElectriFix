@@ -1,6 +1,10 @@
 import { z } from "zod";
 
-import { faultTypes, telemetryEventTypes } from "../../domain/contracts.js";
+import {
+  faultTypes,
+  simulatorNoiseTypes,
+  telemetryEventTypes,
+} from "../../domain/contracts.js";
 
 export const telemetryEventSchema = z.object({
   device_id: z.string().min(1),
@@ -30,6 +34,11 @@ export const injectFaultRequestSchema = z.object({
 export const repairFaultRequestSchema = z.object({
   fault_id: z.uuidv7(),
 });
+export const injectNoiseRequestSchema = z.object({
+  noise_type: z.enum(simulatorNoiseTypes),
+  target_pole_id: z.string().min(1).optional(),
+  options: z.record(z.string(), z.unknown()).optional(),
+});
 
 export const assignTicketRequestSchema = z.object({
   assigned_crew: z.string().min(1),
@@ -44,5 +53,6 @@ export type TelemetryEventRequest = z.infer<typeof telemetryEventSchema>;
 export type TelemetryBatchRequest = z.infer<typeof telemetryBatchRequestSchema>;
 export type InjectFaultRequest = z.infer<typeof injectFaultRequestSchema>;
 export type RepairFaultRequest = z.infer<typeof repairFaultRequestSchema>;
+export type InjectNoiseRequest = z.infer<typeof injectNoiseRequestSchema>;
 export type AssignTicketRequest = z.infer<typeof assignTicketRequestSchema>;
 export type TicketActionRequest = z.infer<typeof ticketActionRequestSchema>;

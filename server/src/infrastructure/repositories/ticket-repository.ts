@@ -143,6 +143,17 @@ export class TicketRepository {
     return result;
   }
 
+  async findFaultById(
+    faultId: string,
+  ): Promise<FaultPersistenceModel | undefined> {
+    const [fault] = await this.db
+      .select()
+      .from(faults)
+      .where(eq(faults.faultId, faultId))
+      .limit(1);
+    return fault;
+  }
+
   async listRestorableTicketsWithFaults(): Promise<
     ReadonlyArray<TicketWithFault>
   > {

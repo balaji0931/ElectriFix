@@ -774,6 +774,51 @@ Phase 10 established the operational ticket workflow and telemetry-based restora
 
 ---
 
+# Session 16 — Simulator Engine and Simulator API
+
+## Goal
+
+Implement a production-faithful simulator that generates telemetry exclusively through the production ingestion pipeline and expose it through the documented REST API.
+
+## Delegated to AI
+
+- Simulator engine
+- NetworkGenerator
+- FaultInjector
+- TelemetryProducer
+- NoiseGenerator
+- RepairExecutor
+- RunSimulation
+- Simulator REST routes
+- Unit, route, integration, and database-backed tests
+
+## Human Review
+
+Implementation paused before development to resolve:
+
+- firmware 1.2 silence ownership
+- dead sensor ownership
+- fallback span behavior
+- simulation completion semantics
+- deterministic default target selection
+- noise repetition semantics
+
+The implementation was reviewed to ensure:
+
+- simulator produces telemetry only
+- no direct writes to telemetry, pole state, faults, or tickets
+- EventPipeline remains the sole ingestion path
+- repair increments boot_counter and emits boot followed by power_restored
+- simulator routes remain thin transport adapters
+- simulation completion is admission-based
+- repair verification occurs through the normal production workflow
+
+## Outcome
+
+Phases 11–12 established a production-faithful simulator and REST API that exercise the complete telemetry, localization, fault, and ticket workflow through the existing production pipeline without introducing simulator backdoors or bypassing architectural boundaries.
+
+---
+
 # Examples of AI Output That Was Rejected
 
 ## Example 1

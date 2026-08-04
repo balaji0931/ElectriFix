@@ -33,6 +33,13 @@ docker compose up --build
 
 For a separate test database, set `TEST_DATABASE_URL` and run the server test suite. That database must be dedicated to tests.
 
+## Simulator Troubleshooting
+
+- If a simulator request returns `404`, fetch `/api/simulator/scenarios` and use a listed feeder, DT, or device-equipped pole ID.
+- A `409` response means a simulation for that target is still admitting telemetry. Wait for completion before retrying.
+- A `422` response means the requested scenario is invalid, such as a span fault on fallback topology or non-adjacent span poles.
+- Fault and repair simulations return `202` after telemetry admission begins. Fault localization and ticket verification continue through the normal asynchronous production workflow.
+
 ## Phase 0 Troubleshooting
 
 - If port 8080 is already in use, set `APP_PORT` in `.env` to an available port.

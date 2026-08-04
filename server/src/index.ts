@@ -20,7 +20,13 @@ import { TelemetryRepository } from "./infrastructure/repositories/telemetry-rep
 import { TicketRepository } from "./infrastructure/repositories/ticket-repository.js";
 import { ScheduledOutageClient } from "./infrastructure/scheduled-outage-client.js";
 import { IngestTelemetry } from "./application/ingest-telemetry.js";
+import { RunSimulation } from "./application/run-simulation.js";
 import { createApp } from "./presentation/app.js";
+import { FaultInjector } from "./simulator/fault-injector.js";
+import { NetworkGenerator } from "./simulator/network-generator.js";
+import { NoiseGenerator } from "./simulator/noise-generator.js";
+import { RepairExecutor } from "./simulator/repair-executor.js";
+import { TelemetryProducer } from "./simulator/telemetry-producer.js";
 
 const environment = loadEnvironment();
 const logger = pino({ level: environment.LOG_LEVEL });
@@ -81,6 +87,24 @@ poleStateService.subscribe((transition) => {
     });
 });
 const ingestTelemetry = new IngestTelemetry(eventPipeline);
+const simulatorTelemetryProducer = new TelemetryProducer(startupSnapshot);
+const runSimulation = new RunSimulation(
+  ingestTelemetry,
+  new NetworkGenerator(startupSnapshot),
+  new FaultInjector(
+    startupSnapshot,
+    new CachedTopologyResolver(startupSnapshot),
+    simulatorTelemetryProducer,
+  ),
+  new NoiseGenerator(simulatorTelemetryProducer, startupSnapshot),
+  new RepairExecutor(simulatorTelemetryProducer),
+  new TicketRepository(database.db),
+  {
+    publish(event) {
+      logger.debug({ type: event.type }, "Simulation internal event published");
+    },
+  },
+);
 const startedAt = Date.now();
 
 const app = createApp({
@@ -90,6 +114,7 @@ const app = createApp({
   startedAt,
   version: environment.APP_VERSION,
   ingestTelemetry,
+  runSimulation,
 });
 
 const server = app.listen(environment.PORT, () => {

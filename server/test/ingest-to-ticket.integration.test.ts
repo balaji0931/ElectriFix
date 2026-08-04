@@ -3,6 +3,8 @@ import request from "supertest";
 import { eq } from "drizzle-orm";
 
 import { IngestTelemetry } from "../src/application/ingest-telemetry.js";
+import { ManageTicket } from "../src/application/manage-ticket.js";
+import { RunSimulation } from "../src/application/run-simulation.js";
 import {
   LocalizeFaults,
   type LocalizationEvent,
@@ -12,6 +14,8 @@ import { FaultLocalizationEngine } from "../src/domain/localization/fault-locali
 import { DeadSensorDetector } from "../src/domain/noise-filter/dead-sensor-detector.js";
 import { ScheduledOutageFilter } from "../src/domain/noise-filter/scheduled-outage-filter.js";
 import { PoleStateService } from "../src/domain/pole-state/pole-state-service.js";
+import { RestorationVerifier } from "../src/domain/ticket/restoration-verifier.js";
+import { TicketLifecycle } from "../src/domain/ticket/ticket-lifecycle.js";
 import { CachedTopologyResolver } from "../src/domain/topology/topology-resolver.js";
 import { bootstrapStartupState } from "../src/infrastructure/db/bootstrap.js";
 import {
@@ -28,6 +32,11 @@ import { TelemetryRepository } from "../src/infrastructure/repositories/telemetr
 import { TicketRepository } from "../src/infrastructure/repositories/ticket-repository.js";
 import { ScheduledOutageClient } from "../src/infrastructure/scheduled-outage-client.js";
 import { createApp } from "../src/presentation/app.js";
+import { FaultInjector } from "../src/simulator/fault-injector.js";
+import { NetworkGenerator } from "../src/simulator/network-generator.js";
+import { NoiseGenerator } from "../src/simulator/noise-generator.js";
+import { RepairExecutor } from "../src/simulator/repair-executor.js";
+import { TelemetryProducer } from "../src/simulator/telemetry-producer.js";
 
 const testDatabaseUrl = process.env.TEST_DATABASE_URL;
 const integrationDescribe = testDatabaseUrl ? describe : describe.skip;
@@ -75,6 +84,7 @@ integrationDescribe("Phase 9 ingest-to-ticket flow", () => {
   });
 
   afterAll(async () => {
+    await new Promise((resolve) => setTimeout(resolve, 1_000));
     pipeline?.dispose();
     await connection.pool.end();
   });
@@ -179,6 +189,129 @@ integrationDescribe("Phase 9 ingest-to-ticket flow", () => {
     expect(storedFaults).toHaveLength(1);
     expect(storedTickets).toHaveLength(1);
     expect(events).toHaveLength(2);
+  });
+
+  it("POST /api/simulator/inject-fault drives the production pipeline to one fault and ticket", async () => {
+    const networkRepository = new NetworkRepository(connection.db);
+    const poleRepository = new PoleRepository(connection.db);
+    const startupSnapshot = await bootstrapStartupState(
+      networkRepository,
+      poleRepository,
+    );
+    const poleStateService = new PoleStateService(poleRepository);
+    await poleStateService.rebuildCache();
+    const ticketRepository = new TicketRepository(connection.db);
+    const localizeFaults = new LocalizeFaults({
+      startupSnapshot,
+      poleStateReader: poleStateService,
+      topologyResolver: new CachedTopologyResolver(startupSnapshot),
+      localizationEngine: new FaultLocalizationEngine(defaultProductPolicies),
+      deadSensorDetector: new DeadSensorDetector(),
+      scheduledOutageFilter: new ScheduledOutageFilter(defaultProductPolicies),
+      scheduledOutageProvider: new ScheduledOutageClient(networkRepository),
+      faultTicketStore: ticketRepository,
+      publisher: { publish() {} },
+    });
+    const manageTicket = new ManageTicket({
+      ticketStore: ticketRepository,
+      poleStateReader: poleStateService,
+      ticketLifecycle: new TicketLifecycle(),
+      restorationVerifier: new RestorationVerifier(defaultProductPolicies),
+      publisher: { publish() {} },
+    });
+    poleStateService.subscribe((transition) => {
+      void localizeFaults.handleTransition(transition);
+    });
+    poleStateService.subscribe((transition) => {
+      void manageTicket.handlePoleStateTransition(transition);
+    });
+    const eventPipeline = new EventPipeline(
+      startupSnapshot,
+      new TelemetryRepository(connection.db),
+      poleStateService,
+      { error: () => undefined },
+    );
+    pipeline = eventPipeline;
+    const ingest = new IngestTelemetry(eventPipeline);
+    const producer = new TelemetryProducer(startupSnapshot);
+    const simulationEvents: { type: string }[] = [];
+    const runSimulation = new RunSimulation(
+      ingest,
+      new NetworkGenerator(startupSnapshot),
+      new FaultInjector(
+        startupSnapshot,
+        new CachedTopologyResolver(startupSnapshot),
+        producer,
+      ),
+      new NoiseGenerator(producer, startupSnapshot),
+      new RepairExecutor(producer),
+      ticketRepository,
+      {
+        publish(event) {
+          simulationEvents.push(event);
+        },
+      },
+    );
+    const app = createApp({
+      checkDatabase: async () => {
+        await connection.pool.query("SELECT 1");
+      },
+      startedAt: seedTime.getTime(),
+      version: "test",
+      ingestTelemetry: ingest,
+      runSimulation,
+    });
+
+    await request(app)
+      .post("/api/simulator/inject-fault")
+      .send({
+        fault_type: "dt",
+        target_id: dtId,
+        options: {
+          fw12_percentage: 0,
+          power_lost_delivery_rate: 1,
+          clock_skew_seconds: 0,
+        },
+      })
+      .expect(202);
+    await waitFor(async () => {
+      const storedFaults = await connection.db
+        .select()
+        .from(faults)
+        .where(eq(faults.dtId, dtId));
+      expect(storedFaults).toHaveLength(1);
+      const storedTickets = await connection.db
+        .select()
+        .from(tickets)
+        .where(eq(tickets.faultId, storedFaults[0]!.faultId));
+      expect(storedTickets).toHaveLength(1);
+      expect(storedTickets[0]?.status).toBe("detected");
+    });
+    await waitFor(async () => {
+      expect(simulationEvents.map((event) => event.type)).toContain(
+        "simulation.completed",
+      );
+    });
+    const [createdFault] = await connection.db
+      .select()
+      .from(faults)
+      .where(eq(faults.dtId, dtId));
+    await request(app)
+      .post("/api/simulator/repair")
+      .send({ fault_id: createdFault!.faultId })
+      .expect(202);
+    await waitFor(async () => {
+      const [resolvedFault] = await connection.db
+        .select()
+        .from(faults)
+        .where(eq(faults.faultId, createdFault!.faultId));
+      const [verifiedTicket] = await connection.db
+        .select()
+        .from(tickets)
+        .where(eq(tickets.faultId, createdFault!.faultId));
+      expect(resolvedFault?.status).toBe("resolved");
+      expect(verifiedTicket?.status).toBe("verified");
+    });
   });
 });
 

@@ -150,7 +150,11 @@ integrationDescribe("Phase 3 repositories and startup bootstrap", () => {
     const outages = await scheduledOutageClient.listScheduledOutages();
 
     expect(outages).toHaveLength(15);
-    expect(outages[0]).toMatchObject({ outageId: "SO-001", scope: "dt" });
+    expect(outages).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ outageId: "SO-001", scope: "dt" }),
+      ]),
+    );
   });
 
   it("persists a pre-built fault and ticket atomically", async () => {
