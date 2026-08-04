@@ -202,6 +202,39 @@ integrationDescribe("Phase 3 repositories and startup bootstrap", () => {
     ).resolves.toBeUndefined();
   });
 
+  it("persists ticket verification and fault resolution atomically", async () => {
+    const faultId = "018f8acb-0000-7000-8000-000000000104";
+    const ticketId = "018f8acb-0000-7000-8000-000000000204";
+    await ticketRepository.createFaultAndTicket(
+      faultInput(faultId),
+      ticketInput(ticketId, faultId),
+    );
+
+    const loaded = await ticketRepository.findTicketWithFault(ticketId);
+    expect(loaded?.fault.faultId).toBe(faultId);
+    expect(await ticketRepository.listRestorableTicketsWithFaults()).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          ticket: expect.objectContaining({ ticketId }),
+        }),
+      ]),
+    );
+
+    const verifiedAt = new Date("2026-08-05T12:10:00.000Z");
+    const result = await ticketRepository.verifyTicketAndResolveFault(
+      ticketId,
+      faultId,
+      { status: "verified", verifiedAt, updatedAt: verifiedAt },
+      verifiedAt,
+    );
+
+    expect(result.ticket).toMatchObject({ status: "verified", verifiedAt });
+    expect(result.fault).toMatchObject({
+      status: "resolved",
+      resolvedAt: verifiedAt,
+    });
+  });
+
   it("rolls back the fault insert when the paired ticket insert fails", async () => {
     const faultId = "018f8acb-0000-7000-8000-000000000102";
 

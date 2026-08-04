@@ -3,10 +3,13 @@ import pino from "pino";
 import { loadEnvironment } from "./config/env.js";
 import { policies } from "./config/policies.js";
 import { LocalizeFaults } from "./application/localize-faults.js";
+import { ManageTicket } from "./application/manage-ticket.js";
 import { FaultLocalizationEngine } from "./domain/localization/fault-localization-engine.js";
 import { DeadSensorDetector } from "./domain/noise-filter/dead-sensor-detector.js";
 import { ScheduledOutageFilter } from "./domain/noise-filter/scheduled-outage-filter.js";
 import { PoleStateService } from "./domain/pole-state/pole-state-service.js";
+import { RestorationVerifier } from "./domain/ticket/restoration-verifier.js";
+import { TicketLifecycle } from "./domain/ticket/ticket-lifecycle.js";
 import { CachedTopologyResolver } from "./domain/topology/topology-resolver.js";
 import { bootstrapStartupState } from "./infrastructure/db/bootstrap.js";
 import { initializeDatabase } from "./infrastructure/db/startup.js";
@@ -54,10 +57,28 @@ const localizeFaults = new LocalizeFaults({
     },
   },
 });
+const manageTicket = new ManageTicket({
+  ticketStore: new TicketRepository(database.db),
+  poleStateReader: poleStateService,
+  ticketLifecycle: new TicketLifecycle(),
+  restorationVerifier: new RestorationVerifier(policies),
+  publisher: {
+    publish(event) {
+      logger.debug({ type: event.type }, "Ticket internal event published");
+    },
+  },
+});
 poleStateService.subscribe((transition) => {
   void localizeFaults.handleTransition(transition).catch((error: unknown) => {
     logger.error({ error }, "Fault localization orchestration failed");
   });
+});
+poleStateService.subscribe((transition) => {
+  void manageTicket
+    .handlePoleStateTransition(transition)
+    .catch((error: unknown) => {
+      logger.error({ error }, "Ticket restoration verification failed");
+    });
 });
 const ingestTelemetry = new IngestTelemetry(eventPipeline);
 const startedAt = Date.now();

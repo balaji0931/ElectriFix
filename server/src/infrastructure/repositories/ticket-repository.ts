@@ -1,4 +1,4 @@
-import { and, eq, isNull } from "drizzle-orm";
+import { and, eq, inArray, isNull } from "drizzle-orm";
 
 import type { FaultType, TopologySource } from "../../domain/contracts.js";
 import type { Database } from "../db/client.js";
@@ -35,6 +35,23 @@ export interface ActiveFaultUpdate {
   readonly affectedPoleCount: number;
   readonly confidenceLevel: "HIGH" | "MEDIUM" | "LOW";
   readonly updatedAt: Date;
+}
+
+export interface TicketWithFault {
+  readonly ticket: TicketPersistenceModel;
+  readonly fault: FaultPersistenceModel;
+}
+
+export type TicketPersistenceUpdate = Partial<
+  Omit<
+    TicketPersistenceInput,
+    "ticketId" | "faultId" | "detectedAt" | "createdAt"
+  >
+>;
+
+export interface VerifiedTicketAndFault {
+  readonly ticket: TicketPersistenceModel;
+  readonly fault: FaultPersistenceModel;
 }
 
 export class TicketRepository {
@@ -110,6 +127,84 @@ export class TicketRepository {
       }
 
       return { fault: createdFault, ticket: createdTicket };
+    });
+  }
+
+  async findTicketWithFault(
+    ticketId: string,
+  ): Promise<TicketWithFault | undefined> {
+    const [result] = await this.db
+      .select({ ticket: tickets, fault: faults })
+      .from(tickets)
+      .innerJoin(faults, eq(tickets.faultId, faults.faultId))
+      .where(eq(tickets.ticketId, ticketId))
+      .limit(1);
+
+    return result;
+  }
+
+  async listRestorableTicketsWithFaults(): Promise<
+    ReadonlyArray<TicketWithFault>
+  > {
+    return this.db
+      .select({ ticket: tickets, fault: faults })
+      .from(tickets)
+      .innerJoin(faults, eq(tickets.faultId, faults.faultId))
+      .where(
+        and(
+          eq(faults.status, "active"),
+          inArray(tickets.status, [
+            "detected",
+            "acknowledged",
+            "crew_assigned",
+            "resolved",
+          ]),
+        ),
+      );
+  }
+
+  async updateTicket(
+    ticketId: string,
+    update: TicketPersistenceUpdate,
+  ): Promise<TicketPersistenceModel | undefined> {
+    const [ticket] = await this.db
+      .update(tickets)
+      .set(update)
+      .where(eq(tickets.ticketId, ticketId))
+      .returning();
+
+    return ticket;
+  }
+
+  async verifyTicketAndResolveFault(
+    ticketId: string,
+    faultId: string,
+    ticketUpdate: TicketPersistenceUpdate,
+    verifiedAt: Date,
+  ): Promise<VerifiedTicketAndFault> {
+    return this.db.transaction(async (transaction) => {
+      const [ticket] = await transaction
+        .update(tickets)
+        .set(ticketUpdate)
+        .where(eq(tickets.ticketId, ticketId))
+        .returning();
+      const [fault] = await transaction
+        .update(faults)
+        .set({
+          status: "resolved",
+          resolvedAt: verifiedAt,
+          updatedAt: verifiedAt,
+        })
+        .where(and(eq(faults.faultId, faultId), eq(faults.status, "active")))
+        .returning();
+
+      if (!ticket || !fault) {
+        throw new Error(
+          "Ticket verification requires an active fault and ticket",
+        );
+      }
+
+      return { ticket, fault };
     });
   }
 }

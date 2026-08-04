@@ -729,6 +729,51 @@ Phase 9 established the application orchestration layer that connects PoleStateS
 
 ---
 
+# Session 15 — Ticket Lifecycle and Restoration Verification
+
+## Goal
+
+Implement the operational ticket lifecycle and telemetry-based restoration verification while preserving the ownership boundaries between ticket workflow, state management, and localization.
+
+## Delegated to AI
+
+- TicketLifecycle.
+- RestorationVerifier.
+- manage-ticket application use case.
+- Lifecycle persistence.
+- Restoration verification.
+- Unit and integration tests.
+
+## Human Review
+
+Implementation paused before development to resolve:
+
+- verification hold period
+- automatic closure ownership
+
+The implementation was reviewed to ensure:
+
+- TicketLifecycle remains the sole owner of ticket transitions
+- RestorationVerifier uses immutable PoleStateService snapshots only
+- repositories remain persistence adapters
+- manual actions cannot bypass telemetry verification
+- automatic VERIFIED → CLOSED behavior remains deferred
+
+## Decisions
+
+Approved:
+
+- Phase 10 ends at VERIFIED.
+- VERIFIED → CLOSED is deferred until a future scheduler-capable phase.
+- No timers or background workers are introduced.
+- CLOSED remains a valid lifecycle state but is unreachable during Phase 10.
+
+## Outcome
+
+Phase 10 established the operational ticket workflow and telemetry-based restoration verification while preserving deterministic lifecycle ownership and leaving automatic closure for a later scheduler-capable phase.
+
+---
+
 # Examples of AI Output That Was Rejected
 
 ## Example 1

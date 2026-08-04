@@ -1,6 +1,7 @@
 import { v7 as uuidv7 } from "uuid";
 
 import type { FaultCandidate } from "../domain/contracts.js";
+import type { TicketStatus } from "../domain/contracts.js";
 import { DeadSensorDetector } from "../domain/noise-filter/dead-sensor-detector.js";
 import { ScheduledOutageFilter } from "../domain/noise-filter/scheduled-outage-filter.js";
 import type {
@@ -60,6 +61,11 @@ export type LocalizationEvent =
       readonly type: "ticket.created";
       readonly ticket: TicketPersistenceModel;
       readonly fault: FaultPersistenceModel;
+    }
+  | {
+      readonly type: "ticket.updated";
+      readonly ticket: TicketPersistenceModel;
+      readonly previousStatus: TicketStatus;
     };
 
 export interface LocalizationEventPublisher {
