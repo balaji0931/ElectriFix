@@ -166,6 +166,42 @@ integrationDescribe("Phase 3 repositories and startup bootstrap", () => {
     expect(created.ticket.faultId).toBe(faultId);
   });
 
+  it("finds and updates only an active fault identity without replacing evidence", async () => {
+    const faultId = "018f8acb-0000-7000-8000-000000000103";
+    await ticketRepository.createFaultAndTicket(
+      faultInput(faultId),
+      ticketInput("018f8acb-0000-7000-8000-000000000203", faultId),
+    );
+
+    const active = await ticketRepository.findActiveFault({
+      faultType: "dt",
+      dtId: "D-0001",
+      topologySource: "FALLBACK",
+    });
+    expect(active?.faultId).toBe(faultId);
+    const originalEvidence = active?.evidence;
+
+    const updated = await ticketRepository.updateActiveFault(faultId, {
+      affectedPoleCount: 3,
+      confidenceLevel: "MEDIUM",
+      updatedAt: new Date("2026-08-05T12:05:00.000Z"),
+    });
+
+    expect(updated).toMatchObject({
+      affectedPoleCount: 3,
+      confidenceLevel: "MEDIUM",
+    });
+    expect(updated?.evidence).toEqual(originalEvidence);
+    await expect(
+      ticketRepository.findActiveFault({
+        faultType: "span",
+        dtId: "D-0001",
+        spanPoleA: "P-000001",
+        spanPoleB: "P-000002",
+      }),
+    ).resolves.toBeUndefined();
+  });
+
   it("rolls back the fault insert when the paired ticket insert fails", async () => {
     const faultId = "018f8acb-0000-7000-8000-000000000102";
 

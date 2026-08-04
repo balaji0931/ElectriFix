@@ -1,13 +1,21 @@
 import pino from "pino";
 
 import { loadEnvironment } from "./config/env.js";
+import { policies } from "./config/policies.js";
+import { LocalizeFaults } from "./application/localize-faults.js";
+import { FaultLocalizationEngine } from "./domain/localization/fault-localization-engine.js";
+import { DeadSensorDetector } from "./domain/noise-filter/dead-sensor-detector.js";
+import { ScheduledOutageFilter } from "./domain/noise-filter/scheduled-outage-filter.js";
 import { PoleStateService } from "./domain/pole-state/pole-state-service.js";
+import { CachedTopologyResolver } from "./domain/topology/topology-resolver.js";
 import { bootstrapStartupState } from "./infrastructure/db/bootstrap.js";
 import { initializeDatabase } from "./infrastructure/db/startup.js";
 import { EventPipeline } from "./infrastructure/event-pipeline.js";
 import { NetworkRepository } from "./infrastructure/repositories/network-repository.js";
 import { PoleRepository } from "./infrastructure/repositories/pole-repository.js";
 import { TelemetryRepository } from "./infrastructure/repositories/telemetry-repository.js";
+import { TicketRepository } from "./infrastructure/repositories/ticket-repository.js";
+import { ScheduledOutageClient } from "./infrastructure/scheduled-outage-client.js";
 import { IngestTelemetry } from "./application/ingest-telemetry.js";
 import { createApp } from "./presentation/app.js";
 
@@ -28,6 +36,29 @@ const eventPipeline = new EventPipeline(
   poleStateService,
   logger,
 );
+const localizeFaults = new LocalizeFaults({
+  startupSnapshot,
+  poleStateReader: poleStateService,
+  topologyResolver: new CachedTopologyResolver(startupSnapshot),
+  localizationEngine: new FaultLocalizationEngine(policies),
+  deadSensorDetector: new DeadSensorDetector(),
+  scheduledOutageFilter: new ScheduledOutageFilter(policies),
+  scheduledOutageProvider: new ScheduledOutageClient(networkRepository),
+  faultTicketStore: new TicketRepository(database.db),
+  publisher: {
+    publish(event) {
+      logger.debug(
+        { type: event.type },
+        "Localization internal event published",
+      );
+    },
+  },
+});
+poleStateService.subscribe((transition) => {
+  void localizeFaults.handleTransition(transition).catch((error: unknown) => {
+    logger.error({ error }, "Fault localization orchestration failed");
+  });
+});
 const ingestTelemetry = new IngestTelemetry(eventPipeline);
 const startedAt = Date.now();
 

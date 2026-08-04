@@ -686,6 +686,49 @@ Future phases will orchestrate this engine without introducing localization logi
 
 ---
 
+# Session 14 — Fault and Ticket Creation Use Case
+
+## Goal
+
+Implement the application orchestration layer that connects meaningful pole-state transitions to deterministic localization, transactional fault and ticket persistence, merge behavior, and internal domain event publication while preserving the ownership boundaries established in earlier phases.
+
+## Delegated to AI
+
+- localize-faults application use case.
+- Transition subscription wiring.
+- Suppression context assembly.
+- Fault localization orchestration.
+- Fault and ticket persistence.
+- Active fault merge behavior.
+- Internal domain event publication.
+- Unit and integration tests.
+
+## Human Review
+
+Implementation paused before development to resolve:
+
+- active fault identity
+- immutable evidence merge behavior
+- suppression context construction
+- DT versus feeder localization orchestration
+- deterministic evaluation time
+
+The implementation was reviewed to ensure:
+
+- Phase 9 remains an application orchestration layer
+- FaultLocalizationEngine remains pure domain logic
+- repositories remain persistence adapters only
+- FaultEvidence remains immutable
+- one physical fault produces one active fault and one ticket
+- transactional persistence prevents orphan faults or tickets
+- localization remains independent of HTTP and EventPipeline
+
+## Outcome
+
+Phase 9 established the application orchestration layer that connects PoleStateService transitions to deterministic localization, fault persistence, ticket creation, merge behavior, and internal domain events without violating the ownership boundaries established in earlier phases.
+
+---
+
 # Examples of AI Output That Was Rejected
 
 ## Example 1

@@ -629,3 +629,18 @@ Consequences
 - testability without infrastructure
 - clear separation from orchestration
 
+---
+
+**D-021 — Active Fault Identity and Immutable Merge Semantics**
+
+Record:
+- Only `active` faults participate in merge lookup.
+- Identity:
+  - span: `(dt_id, span_pole_a, span_pole_b, fault_type)`
+  - DT: `(dt_id, fault_type)`; fallback also includes `topology_source = FALLBACK`
+  - feeder: `(feeder_id, fault_type)`
+- A merge updates only mutable top-level fields: `affected_pole_count`, `confidence_level`, and `updated_at`.
+- `faults.evidence` is never overwritten or appended.
+- Fault and initial ticket creation remains atomic.
+
+The suppression-context aggregation and transition timestamp as `evaluationTime` are implementation rules applying existing decisions, so they do not need separate decision-log entries.
