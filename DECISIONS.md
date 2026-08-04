@@ -589,3 +589,43 @@ Consequences
 - no secondary ordering authority
 - durable ordering remains in pole_states
 - localization remains decoupled
+
+---
+
+D-022 — Fault Localization Engine Purity
+
+Status
+Accepted
+
+Context
+
+The localization engine must remain deterministic, framework-independent,
+and reusable without infrastructure dependencies.
+
+Decision
+
+FaultLocalizationEngine exposes pure domain entry points.
+
+The caller supplies:
+
+- immutable NetworkGraph
+- immutable pole-state snapshots
+- suppression context
+- evaluation time
+- optional pincode metadata
+
+The engine:
+
+- performs no IO
+- performs no persistence
+- performs no time lookup
+- performs no repository access
+- never mutates inputs
+- returns immutable outputs
+
+Consequences
+
+- deterministic localization
+- testability without infrastructure
+- clear separation from orchestration
+

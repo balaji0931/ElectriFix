@@ -630,6 +630,62 @@ No new engineering decisions were required.
 
 ---
 
+# Session 15 — Fault Localization Engine
+
+## Goal
+
+Implement the deterministic fault localization engine as a pure domain capability while preserving the ownership boundaries defined by the architecture.
+
+## Delegated to AI
+
+- BoundaryFinder implementation.
+- FaultGrouper implementation.
+- ConfidenceScorer implementation.
+- FaultLocalizationEngine orchestration.
+- Immutable FaultEvidence assembly.
+- Domain fixture generation.
+- Localization scenario tests.
+
+## Human Review
+
+Implementation paused before development to resolve:
+
+- feeder-level localization input
+- pincode ownership
+- suppression context contract
+- deterministic evaluation time
+- DT-wide darkness with UNKNOWN poles
+- canonical affected-poles contract
+
+The implementation was reviewed to ensure:
+
+- localization remains pure domain logic
+- the engine imports no infrastructure or presentation modules
+- topology, pole state, suppression context, metadata, and evaluation time remain caller-supplied immutable inputs
+- confidence is derived only from the documented deterministic rules
+- fallback topology never produces false span precision
+- outputs and evidence remain immutable
+- graph traversal remains linear for normal radial distribution transformer networks
+
+During verification, several implementation defects were identified and corrected before acceptance:
+
+- descendant boundaries were incorrectly treated as independent fault boundaries
+- equivalent boundaries incorrectly replaced direct physical boundaries during grouping
+- DT-wide confidence incorrectly treated UNKNOWN poles without telemetry devices as negative evidence
+- repeated graph scans were replaced with indexed lookups to preserve linear traversal complexity
+
+## Outcome
+
+Phase 8 established the deterministic localization engine used by future orchestration phases.
+
+The engine localizes recorded span faults, distribution-transformer faults, feeder-level faults, fallback topology, and multiple simultaneous faults using immutable caller-supplied inputs.
+
+Confidence scoring, fault grouping, and evidence generation remain completely deterministic and independent of infrastructure, persistence, HTTP, WebSockets, simulator behavior, and ticket lifecycle.
+
+Future phases will orchestrate this engine without introducing localization logic outside the domain layer.
+
+---
+
 # Examples of AI Output That Was Rejected
 
 ## Example 1
