@@ -1,4 +1,5 @@
 import type { ErrorRequestHandler } from "express";
+import { HttpError } from "../http-error.js";
 
 export const errorHandler: ErrorRequestHandler = (
   error,
@@ -8,6 +9,15 @@ export const errorHandler: ErrorRequestHandler = (
 ) => {
   void next;
   const isMalformedJson = error instanceof SyntaxError && "body" in error;
+  if (error instanceof HttpError) {
+    return response.status(error.statusCode).json({
+      error: {
+        code: error.code,
+        message: error.message,
+        timestamp: new Date().toISOString(),
+      },
+    });
+  }
   const statusCode = isMalformedJson
     ? 400
     : error.statusCode === 503
@@ -32,6 +42,7 @@ export const errorHandler: ErrorRequestHandler = (
         statusCode === 503
           ? "Database is unavailable"
           : "An unexpected error occurred",
+      timestamp: new Date().toISOString(),
     },
   });
 };

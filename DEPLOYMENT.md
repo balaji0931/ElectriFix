@@ -40,6 +40,13 @@ For a separate test database, set `TEST_DATABASE_URL` and run the server test su
 - A `422` response means the requested scenario is invalid, such as a span fault on fallback topology or non-adjacent span poles.
 - Fault and repair simulations return `202` after telemetry admission begins. Fault localization and ticket verification continue through the normal asynchronous production workflow.
 
+## API Troubleshooting
+
+- List endpoints use opaque cursor pagination. Reuse only the `next_cursor` returned by the preceding response.
+- A `400` response indicates malformed input or an invalid query parameter; a `422` response indicates a valid request that violates a documented business rule.
+- Ticket lifecycle commands return `409` when the current ticket status cannot transition through the requested action.
+- `GET /api/config` exposes effective runtime policies in the public API representation; configuration environment variables remain server-side only.
+
 ## Phase 0 Troubleshooting
 
 - If port 8080 is already in use, set `APP_PORT` in `.env` to an available port.

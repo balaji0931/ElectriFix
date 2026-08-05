@@ -37,3 +37,7 @@ curl -X POST http://localhost:8080/api/simulator/repair \
   -H 'Content-Type: application/json' \
   -d '{"fault_id":"<fault-id>"}'
 ```
+
+## API
+
+The backend REST contract is documented in [API-SPECIFICATION.md](API-SPECIFICATION.md). It includes fault and ticket views, ticket lifecycle commands, current pole state, registry topology, scheduled outages, dashboard summary, and runtime product policies.

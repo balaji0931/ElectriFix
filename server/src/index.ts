@@ -20,6 +20,8 @@ import { TelemetryRepository } from "./infrastructure/repositories/telemetry-rep
 import { TicketRepository } from "./infrastructure/repositories/ticket-repository.js";
 import { ScheduledOutageClient } from "./infrastructure/scheduled-outage-client.js";
 import { IngestTelemetry } from "./application/ingest-telemetry.js";
+import { GetDashboardData } from "./application/get-dashboard-data.js";
+import { GetNetworkData } from "./application/get-network-data.js";
 import { RunSimulation } from "./application/run-simulation.js";
 import { createApp } from "./presentation/app.js";
 import { FaultInjector } from "./simulator/fault-injector.js";
@@ -87,6 +89,17 @@ poleStateService.subscribe((transition) => {
     });
 });
 const ingestTelemetry = new IngestTelemetry(eventPipeline);
+const dashboardData = new GetDashboardData(
+  new TicketRepository(database.db),
+  poleStateService,
+  startupSnapshot,
+  new ScheduledOutageClient(networkRepository),
+);
+const networkData = new GetNetworkData(
+  startupSnapshot,
+  poleStateService,
+  new CachedTopologyResolver(startupSnapshot),
+);
 const simulatorTelemetryProducer = new TelemetryProducer(startupSnapshot);
 const runSimulation = new RunSimulation(
   ingestTelemetry,
@@ -115,6 +128,7 @@ const app = createApp({
   version: environment.APP_VERSION,
   ingestTelemetry,
   runSimulation,
+  api: { dashboardData, networkData, manageTicket, policies },
 });
 
 const server = app.listen(environment.PORT, () => {

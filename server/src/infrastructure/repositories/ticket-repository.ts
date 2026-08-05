@@ -154,6 +154,17 @@ export class TicketRepository {
     return fault;
   }
 
+  listFaults(): Promise<FaultPersistenceModel[]> {
+    return this.db.select().from(faults);
+  }
+
+  listTicketsWithFaults(): Promise<TicketWithFault[]> {
+    return this.db
+      .select({ ticket: tickets, fault: faults })
+      .from(tickets)
+      .innerJoin(faults, eq(tickets.faultId, faults.faultId));
+  }
+
   async listRestorableTicketsWithFaults(): Promise<
     ReadonlyArray<TicketWithFault>
   > {

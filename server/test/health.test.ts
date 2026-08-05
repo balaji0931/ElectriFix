@@ -43,11 +43,10 @@ describe("GET /api/health", () => {
     const response = await request(app).get("/api/health");
 
     expect(response.status).toBe(503);
-    expect(response.body).toEqual({
-      error: {
-        code: "SERVICE_UNAVAILABLE",
-        message: "Database is unavailable",
-      },
+    expect(response.body.error).toMatchObject({
+      code: "SERVICE_UNAVAILABLE",
+      message: "Database is unavailable",
     });
+    expect(response.body.error.timestamp).toEqual(expect.any(String));
   });
 });

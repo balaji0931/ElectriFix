@@ -47,6 +47,13 @@ export interface AssignTicketCommand extends OperatorTicketCommand {
   readonly assignedCrew: string;
 }
 
+export class TicketNotFoundError extends Error {
+  constructor(ticketId: string) {
+    super(`Ticket ${ticketId} was not found`);
+    this.name = "TicketNotFoundError";
+  }
+}
+
 /** Coordinates ticket-state persistence with pure lifecycle and verification rules. */
 export class ManageTicket {
   constructor(private readonly dependencies: ManageTicketDependencies) {}
@@ -160,7 +167,7 @@ export class ManageTicket {
     const record =
       await this.dependencies.ticketStore.findTicketWithFault(ticketId);
     if (!record) {
-      throw new Error(`Ticket ${ticketId} was not found`);
+      throw new TicketNotFoundError(ticketId);
     }
     return record;
   }
