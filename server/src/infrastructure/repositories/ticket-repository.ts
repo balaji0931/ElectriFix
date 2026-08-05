@@ -108,6 +108,20 @@ export class TicketRepository {
     return fault;
   }
 
+  async updateFaultAiSummary(
+    faultId: string,
+    aiSummary: string,
+    updatedAt: Date,
+  ): Promise<FaultPersistenceModel | undefined> {
+    const [fault] = await this.db
+      .update(faults)
+      .set({ aiSummary, updatedAt })
+      .where(and(eq(faults.faultId, faultId), isNull(faults.aiSummary)))
+      .returning();
+
+    return fault;
+  }
+
   async createFaultAndTicket(
     fault: FaultPersistenceInput,
     ticket: TicketPersistenceInput,

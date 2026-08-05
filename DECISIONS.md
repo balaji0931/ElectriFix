@@ -687,3 +687,11 @@ an alternate source of truth when live notifications are missed.
 The full subdivision is unnecessary for the selected incident view and adds
 avoidable client work. WebSocket has no durable replay contract. Span-precise
 fallback rendering would conceal localization uncertainty from operators.
+
+---
+
+### D-024 — Optional OpenRouter Incident Enrichment
+
+**Status:** Accepted
+
+OpenRouter may generate a human-readable summary only after fault and ticket persistence. It receives structured evidence and stable fault metadata, never participates in deterministic decisions, and is disabled by default. Any disabled, missing-credential, timeout, provider-error, or malformed-response outcome leaves `ai_summary` as `null`.

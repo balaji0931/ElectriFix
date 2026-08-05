@@ -3,6 +3,7 @@ import pino from "pino";
 import { loadEnvironment } from "./config/env.js";
 import { policies } from "./config/policies.js";
 import { LocalizeFaults } from "./application/localize-faults.js";
+import { AiSummaryService } from "./application/ai-summary-service.js";
 import { ManageTicket } from "./application/manage-ticket.js";
 import { FaultLocalizationEngine } from "./domain/localization/fault-localization-engine.js";
 import { DeadSensorDetector } from "./domain/noise-filter/dead-sensor-detector.js";
@@ -20,6 +21,7 @@ import { TelemetryRepository } from "./infrastructure/repositories/telemetry-rep
 import { TicketRepository } from "./infrastructure/repositories/ticket-repository.js";
 import { ScheduledOutageClient } from "./infrastructure/scheduled-outage-client.js";
 import { WebSocketEmitter } from "./infrastructure/websocket-emitter.js";
+import { OpenRouterSummaryProvider } from "./infrastructure/openrouter-summary-provider.js";
 import { IngestTelemetry } from "./application/ingest-telemetry.js";
 import { GetDashboardData } from "./application/get-dashboard-data.js";
 import { GetNetworkData } from "./application/get-network-data.js";
@@ -53,6 +55,15 @@ const eventPipeline = new EventPipeline(
   logger,
 );
 const websocketEmitter = new WebSocketEmitter();
+const aiSummaryService = new AiSummaryService(
+  environment.AI_SUMMARIES_ENABLED,
+  new OpenRouterSummaryProvider({
+    apiKey: environment.OPENROUTER_API_KEY,
+    model: environment.OPENROUTER_MODEL,
+    baseUrl: environment.OPENROUTER_BASE_URL,
+    timeoutMs: environment.AI_SUMMARY_TIMEOUT_MS,
+  }),
+);
 const liveUpdates = new LiveUpdates(websocketEmitter, startupSnapshot);
 const localizeFaults = new LocalizeFaults({
   startupSnapshot,
@@ -68,6 +79,7 @@ const localizeFaults = new LocalizeFaults({
       liveUpdates.publishLocalizationEvent(event);
     },
   },
+  aiSummaryService,
 });
 const manageTicket = new ManageTicket({
   ticketStore: new TicketRepository(database.db),

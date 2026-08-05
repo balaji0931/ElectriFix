@@ -942,6 +942,29 @@ domain behavior.
 
 ---
 
+# Session 20 — AI Incident Summaries
+
+## Goal
+
+Add optional human-readable incident summaries without allowing an LLM to affect deterministic fault detection, localization, confidence, or ticket workflow.
+
+## Delegated to AI
+
+- OpenRouter adapter and environment configuration.
+- Evidence-only prompt mapping.
+- Non-blocking post-persistence summary backfill.
+- Failure, disabled-provider, and malformed-response tests.
+
+## Human Review
+
+The implementation plan's template-fallback wording conflicted with the frozen API contract. The API contract was retained: all unavailable or failed AI outcomes leave `ai_summary` null and the existing UI renders the deterministic operator fallback.
+
+## Outcome
+
+AI is an optional enrichment after fault and ticket creation. It publishes no operational decision and cannot alter structured evidence or workflow state.
+
+---
+
 # Examples of AI Output That Was Rejected
 
 ## Example 1

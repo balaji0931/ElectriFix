@@ -54,6 +54,10 @@ For a separate test database, set `TEST_DATABASE_URL` and run the server test su
 - WebSocket delivery is at-most-once and has no replay. After every successful connection, the client must re-fetch `GET /api/dashboard/summary` and `GET /api/tickets?status=open`.
 - While a WebSocket connection is unavailable, client screens should use their REST polling fallback. REST remains authoritative in both modes.
 
+## Optional AI Summaries
+
+The OpenRouter integration is disabled unless `AI_SUMMARIES_ENABLED=true`. Set `OPENROUTER_API_KEY`, `OPENROUTER_MODEL`, and optionally `OPENROUTER_BASE_URL` and `AI_SUMMARY_TIMEOUT_MS` (default `5000`). Do not commit the API key. A missing key, timeout, provider error, or malformed response leaves `ai_summary` as `null`; the application remains fully operational.
+
 ## Phase 0 Troubleshooting
 
 - If port 8080 is already in use, set `APP_PORT` in `.env` to an available port.

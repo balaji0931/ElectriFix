@@ -22,6 +22,11 @@ services:
       DATABASE_URL: postgresql://${POSTGRES_USER:-electrifix}:${POSTGRES_PASSWORD:-electrifix}@db:5432/${POSTGRES_DB:-electrifix}
       TEST_DATABASE_URL: postgresql://${POSTGRES_USER:-electrifix}:${POSTGRES_PASSWORD:-electrifix}@db:5432/${POSTGRES_DB:-electrifix}
       LOG_LEVEL: ${LOG_LEVEL:-info}
+      AI_SUMMARIES_ENABLED: ${AI_SUMMARIES_ENABLED:-false}
+      OPENROUTER_API_KEY: ${OPENROUTER_API_KEY:-}
+      OPENROUTER_MODEL: ${OPENROUTER_MODEL:-}
+      OPENROUTER_BASE_URL: ${OPENROUTER_BASE_URL:-https://openrouter.ai/api/v1}
+      AI_SUMMARY_TIMEOUT_MS: ${AI_SUMMARY_TIMEOUT_MS:-5000}
       PORT: 3001
     depends_on:
       db:

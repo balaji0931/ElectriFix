@@ -1,5 +1,7 @@
 import { v7 as uuidv7 } from "uuid";
 
+import type { AiSummaryService } from "./ai-summary-service.js";
+
 import type { FaultCandidate } from "../domain/contracts.js";
 import type { TicketStatus } from "../domain/contracts.js";
 import { DeadSensorDetector } from "../domain/noise-filter/dead-sensor-detector.js";
@@ -42,6 +44,11 @@ export interface FaultTicketStore {
     fault: FaultPersistenceInput,
     ticket: TicketPersistenceInput,
   ): Promise<CreatedFaultAndTicket>;
+  updateFaultAiSummary(
+    faultId: string,
+    aiSummary: string,
+    updatedAt: Date,
+  ): Promise<FaultPersistenceModel | undefined>;
 }
 
 export interface PoleStateReader {
@@ -86,6 +93,7 @@ export interface LocalizeFaultsDependencies {
   readonly scheduledOutageProvider: ScheduledOutageProvider;
   readonly faultTicketStore: FaultTicketStore;
   readonly publisher: LocalizationEventPublisher;
+  readonly aiSummaryService?: AiSummaryService;
 }
 
 /**
@@ -317,6 +325,35 @@ export class LocalizeFaults {
         fault: created.fault,
       }),
     );
+    void this.backfillAiSummary(created.fault);
+  }
+
+  private async backfillAiSummary(fault: FaultPersistenceModel): Promise<void> {
+    const service = this.dependencies.aiSummaryService;
+    if (!service) return;
+
+    const aiSummary = await service.generate({
+      faultType: fault.faultType as FaultCandidate["fault_type"],
+      topologySource: fault.topologySource as FaultCandidate["topology_source"],
+      confidenceLevel:
+        fault.confidenceLevel as FaultCandidate["confidence_level"],
+      affectedPoleCount: fault.affectedPoleCount,
+      pincode: fault.pincode,
+      evidence: fault.evidence as unknown as FaultCandidate["evidence"],
+    });
+    if (aiSummary === null) return;
+
+    const updated =
+      await this.dependencies.faultTicketStore.updateFaultAiSummary(
+        fault.faultId,
+        aiSummary,
+        new Date(),
+      );
+    if (updated) {
+      this.dependencies.publisher.publish(
+        Object.freeze({ type: "fault.updated", fault: updated }),
+      );
+    }
   }
 }
 

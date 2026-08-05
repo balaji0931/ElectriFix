@@ -356,6 +356,24 @@ class InMemoryFaultTicketStore {
     return updated;
   }
 
+  async updateFaultAiSummary(
+    faultId: string,
+    aiSummary: string,
+    updatedAt: Date,
+  ): Promise<FaultPersistenceModel | undefined> {
+    const index = this.faults.findIndex((fault) => fault.faultId === faultId);
+    if (index === -1 || this.faults[index]!.aiSummary !== null) {
+      return undefined;
+    }
+    const updated = {
+      ...this.faults[index]!,
+      aiSummary,
+      updatedAt,
+    } as FaultPersistenceModel;
+    this.faults[index] = updated;
+    return updated;
+  }
+
   async createFaultAndTicket(
     fault: FaultPersistenceInput,
     ticket: TicketPersistenceInput,

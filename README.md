@@ -42,6 +42,10 @@ curl -X POST http://localhost:8080/api/simulator/repair \
 
 The backend REST contract is documented in [API-SPECIFICATION.md](API-SPECIFICATION.md). It includes fault and ticket views, ticket lifecycle commands, current pole state, registry topology, scheduled outages, dashboard summary, and runtime product policies.
 
+## Optional AI Summaries
+
+AI incident summaries are disabled by default. To enable the optional OpenRouter enrichment, set `AI_SUMMARIES_ENABLED=true` plus `OPENROUTER_API_KEY` and `OPENROUTER_MODEL`. Summaries are generated after fault and ticket persistence; missing credentials, timeout, provider failure, or malformed output leave `ai_summary` as `null` and do not affect detection or ticket workflow.
+
 ## Operator Console
 
 Open `http://localhost:8080` to use the reviewer-facing operator console. The
