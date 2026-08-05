@@ -819,7 +819,7 @@ Phases 11–12 established a production-faithful simulator and REST API that exe
 
 ---
 
-# Session 19 — REST API Completion
+# Session 17 — REST API Completion
 
 ## Goal
 
@@ -856,6 +856,48 @@ The implementation was reviewed to ensure:
 ## Outcome
 
 Phase 13 completed the documented REST API surface and established a deterministic presentation boundary for frontend integration.
+
+---
+
+# Session 18 — WebSocket Live Updates
+
+## Goal
+
+Implement real-time operator updates while preserving REST as the authoritative source of truth and keeping WebSocket as a transport-only notification layer.
+
+## Delegated to AI
+
+- WebSocket server.
+- Transport emitter.
+- Live update dispatcher.
+- DT-scoped batching.
+- Reconnect hook.
+- Nginx integration.
+- WebSocket tests.
+- Client reconnect tests.
+
+## Human Review
+
+Implementation paused before development to resolve:
+
+- simulation.started nullable payload fields
+- DT batching boundary
+- WebSocket runtime dependency
+
+The implementation was reviewed to ensure:
+
+- WebSocket remains transport-only
+- existing producers remain unchanged
+- REST remains authoritative
+- no replay or persistence is introduced
+- per-entity ordering is preserved
+- pole.state_changed batching occurs once per DT per event-loop cycle
+- reconnect recommends REST refetch
+- transport introduces no business logic
+
+## Outcome
+
+Phase 14 established real-time event delivery over WebSocket while preserving the existing application, domain, and persistence ownership boundaries.
 
 ---
 

@@ -47,6 +47,13 @@ For a separate test database, set `TEST_DATABASE_URL` and run the server test su
 - Ticket lifecycle commands return `409` when the current ticket status cannot transition through the requested action.
 - `GET /api/config` exposes effective runtime policies in the public API representation; configuration environment variables remain server-side only.
 
+## WebSocket Troubleshooting
+
+- Connect to `ws://localhost:8080/ws` locally. When TLS terminates in front of Nginx, use `wss://`.
+- Nginx proxies `/ws` with the required HTTP upgrade headers. Rebuild the stack after dependency or proxy changes with `docker compose up --build`.
+- WebSocket delivery is at-most-once and has no replay. After every successful connection, the client must re-fetch `GET /api/dashboard/summary` and `GET /api/tickets?status=open`.
+- While a WebSocket connection is unavailable, client screens should use their REST polling fallback. REST remains authoritative in both modes.
+
 ## Phase 0 Troubleshooting
 
 - If port 8080 is already in use, set `APP_PORT` in `.env` to an available port.

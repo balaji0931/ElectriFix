@@ -19,11 +19,16 @@ import { PoleRepository } from "./infrastructure/repositories/pole-repository.js
 import { TelemetryRepository } from "./infrastructure/repositories/telemetry-repository.js";
 import { TicketRepository } from "./infrastructure/repositories/ticket-repository.js";
 import { ScheduledOutageClient } from "./infrastructure/scheduled-outage-client.js";
+import { WebSocketEmitter } from "./infrastructure/websocket-emitter.js";
 import { IngestTelemetry } from "./application/ingest-telemetry.js";
 import { GetDashboardData } from "./application/get-dashboard-data.js";
 import { GetNetworkData } from "./application/get-network-data.js";
 import { RunSimulation } from "./application/run-simulation.js";
 import { createApp } from "./presentation/app.js";
+import {
+  attachLiveUpdates,
+  LiveUpdates,
+} from "./presentation/ws/live-updates.js";
 import { FaultInjector } from "./simulator/fault-injector.js";
 import { NetworkGenerator } from "./simulator/network-generator.js";
 import { NoiseGenerator } from "./simulator/noise-generator.js";
@@ -47,6 +52,8 @@ const eventPipeline = new EventPipeline(
   poleStateService,
   logger,
 );
+const websocketEmitter = new WebSocketEmitter();
+const liveUpdates = new LiveUpdates(websocketEmitter, startupSnapshot);
 const localizeFaults = new LocalizeFaults({
   startupSnapshot,
   poleStateReader: poleStateService,
@@ -58,10 +65,7 @@ const localizeFaults = new LocalizeFaults({
   faultTicketStore: new TicketRepository(database.db),
   publisher: {
     publish(event) {
-      logger.debug(
-        { type: event.type },
-        "Localization internal event published",
-      );
+      liveUpdates.publishLocalizationEvent(event);
     },
   },
 });
@@ -72,7 +76,7 @@ const manageTicket = new ManageTicket({
   restorationVerifier: new RestorationVerifier(policies),
   publisher: {
     publish(event) {
-      logger.debug({ type: event.type }, "Ticket internal event published");
+      liveUpdates.publishLocalizationEvent(event);
     },
   },
 });
@@ -80,6 +84,9 @@ poleStateService.subscribe((transition) => {
   void localizeFaults.handleTransition(transition).catch((error: unknown) => {
     logger.error({ error }, "Fault localization orchestration failed");
   });
+});
+poleStateService.subscribe((transition) => {
+  liveUpdates.publishPoleStateTransition(transition);
 });
 poleStateService.subscribe((transition) => {
   void manageTicket
@@ -114,7 +121,7 @@ const runSimulation = new RunSimulation(
   new TicketRepository(database.db),
   {
     publish(event) {
-      logger.debug({ type: event.type }, "Simulation internal event published");
+      liveUpdates.publishSimulationEvent(event);
     },
   },
 );
@@ -141,9 +148,12 @@ const server = app.listen(environment.PORT, () => {
     "ElectriFix server started",
   );
 });
+const webSocketServer = attachLiveUpdates(server, websocketEmitter);
 
 async function shutDown() {
   logger.info("ElectriFix server stopping");
+  webSocketServer.close();
+  websocketEmitter.close();
   server.close(async () => {
     eventPipeline.dispose();
     await database.pool.end();

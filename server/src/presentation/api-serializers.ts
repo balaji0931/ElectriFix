@@ -1,5 +1,11 @@
 import type { ProductPolicies } from "../config/policies.js";
-import type { FaultEvidence } from "../domain/contracts.js";
+import type {
+  ConfidenceLevel,
+  FaultEvidence,
+  FaultType,
+  TopologySource,
+} from "../domain/contracts.js";
+import type { FaultSummaryResponse } from "./contracts/api.models.js";
 import type { PoleState } from "../domain/pole-state/types.js";
 import type { StartupSnapshot } from "../infrastructure/db/bootstrap.js";
 import type {
@@ -32,17 +38,19 @@ export function faultResponse(fault: FaultPersistenceModel) {
   };
 }
 
-export function faultSummary(fault: FaultPersistenceModel) {
+export function faultSummary(
+  fault: FaultPersistenceModel,
+): FaultSummaryResponse {
   return {
     fault_id: fault.faultId,
-    fault_type: fault.faultType,
+    fault_type: fault.faultType as FaultType,
     dt_id: fault.dtId,
     lat: fault.lat,
     lon: fault.lon,
     pincode: fault.pincode,
     affected_pole_count: fault.affectedPoleCount,
-    confidence_level: fault.confidenceLevel,
-    topology_source: fault.topologySource,
+    confidence_level: fault.confidenceLevel as ConfidenceLevel,
+    topology_source: fault.topologySource as TopologySource,
   };
 }
 

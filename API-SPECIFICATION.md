@@ -1603,11 +1603,14 @@ Emitted when one or more poles change state. Batched to avoid flooding.
   "type": "simulation.started",
   "payload": {
     "simulation_id": "uuid",
-    "fault_type": "span",
-    "target_id": "D-0112"
+    "fault_type": "span" | null,
+    "target_id": "D-0112" | null
   }
 }
 ```
+
+`fault_type` and `target_id` are populated for fault-injection simulations.
+They are `null` for repair and noise simulations.
 
 #### `simulation.completed`
 
@@ -1631,7 +1634,7 @@ Emitted when one or more poles change state. Batched to avoid flooding.
 | **Ordering** | Events for the same entity (e.g., same ticket) are delivered in order. Events for different entities may arrive in any order. |
 | **Delivery** | At-most-once. If a client disconnects, missed events are not replayed. The client should re-fetch via REST on reconnect. |
 | **Deduplication** | Each event has a unique `event_id`. Clients should deduplicate by `event_id` if they receive the same event twice (possible during reconnection). |
-| **Batching** | `pole.state_changed` events are batched per DT to avoid flooding. One message per DT per state change cycle, not one per pole. |
+| **Batching** | `pole.state_changed` events are batched per DT to avoid flooding. A state-change cycle is all `PoleStateService` transitions observed during one JavaScript event-loop turn; the server flushes one ordered message per DT in the following microtask. |
 
 ### Reconnection Protocol
 

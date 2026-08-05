@@ -644,3 +644,14 @@ Record:
 - Fault and initial ticket creation remains atomic.
 
 The suppression-context aggregation and transition timestamp as `evaluationTime` are implementation rules applying existing decisions, so they do not need separate decision-log entries.
+
+---
+
+### D-022 — WebSocket Contract Clarifications
+
+Approved:
+- simulation.started.fault_type and target_id are nullable because repair and noise simulations do not target a fault.
+- A pole state-change cycle is defined as all PoleStateService transitions observed during one JavaScript event-loop turn and flushed in the following microtask per DT.
+
+Rationale:
+These clarify previously ambiguous public WebSocket behavior without changing ownership or architecture.

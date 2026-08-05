@@ -152,8 +152,8 @@ export interface PoleStateChangedMessage extends WebSocketMessage<{
 
 export interface SimulationStartedMessage extends WebSocketMessage<{
   simulation_id: string;
-  fault_type: FaultType;
-  target_id: string;
+  fault_type: FaultType | null;
+  target_id: string | null;
 }> {
   type: "simulation.started";
 }
