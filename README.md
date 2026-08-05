@@ -41,3 +41,25 @@ curl -X POST http://localhost:8080/api/simulator/repair \
 ## API
 
 The backend REST contract is documented in [API-SPECIFICATION.md](API-SPECIFICATION.md). It includes fault and ticket views, ticket lifecycle commands, current pole state, registry topology, scheduled outages, dashboard summary, and runtime product policies.
+
+## Operator Console
+
+Open `http://localhost:8080` to use the reviewer-facing operator console. The
+dashboard presents active faults, current ticket workflow, localized evidence,
+and a DT-scoped network map. It makes topology source and confidence visible:
+
+- Recorded topology is shown as a solid network path.
+- Inferred topology is reserved for a distinct dashed treatment when available.
+- Fallback topology is shown as a DT area and never as an exact fault span.
+
+Select a fault to inspect its last live pole, first dark pole, affected-pole
+count, PIN code, confidence reasons, and the nullable AI summary. Use the
+ticket panel to acknowledge, assign, and record resolution; the backend remains
+the lifecycle authority and returns any invalid transition as an on-screen
+conflict.
+
+The Simulator panel submits documented fault, repair, and noise scenarios to
+the same production telemetry pipeline. Live notifications refresh the console
+when WebSocket connectivity is available. After a disconnection or reconnect,
+the console refetches REST data; REST remains the authoritative source of
+truth.

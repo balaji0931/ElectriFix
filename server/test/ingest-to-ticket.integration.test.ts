@@ -30,7 +30,6 @@ import { NetworkRepository } from "../src/infrastructure/repositories/network-re
 import { PoleRepository } from "../src/infrastructure/repositories/pole-repository.js";
 import { TelemetryRepository } from "../src/infrastructure/repositories/telemetry-repository.js";
 import { TicketRepository } from "../src/infrastructure/repositories/ticket-repository.js";
-import { ScheduledOutageClient } from "../src/infrastructure/scheduled-outage-client.js";
 import { createApp } from "../src/presentation/app.js";
 import { FaultInjector } from "../src/simulator/fault-injector.js";
 import { NetworkGenerator } from "../src/simulator/network-generator.js";
@@ -46,6 +45,9 @@ const upstreamPoleId = "P-001609";
 const downstreamPoleId = "P-001610";
 const upstreamDeviceId = "DEV-001609";
 const downstreamDeviceId = "DEV-001610";
+const noScheduledOutages = Object.freeze({
+  listScheduledOutages: async () => Object.freeze([]),
+});
 
 integrationDescribe("Phase 9 ingest-to-ticket flow", () => {
   let connection: DatabaseConnection;
@@ -106,7 +108,7 @@ integrationDescribe("Phase 9 ingest-to-ticket flow", () => {
       localizationEngine: new FaultLocalizationEngine(defaultProductPolicies),
       deadSensorDetector: new DeadSensorDetector(),
       scheduledOutageFilter: new ScheduledOutageFilter(defaultProductPolicies),
-      scheduledOutageProvider: new ScheduledOutageClient(networkRepository),
+      scheduledOutageProvider: noScheduledOutages,
       faultTicketStore: new TicketRepository(connection.db),
       publisher: {
         publish(event) {
@@ -208,7 +210,7 @@ integrationDescribe("Phase 9 ingest-to-ticket flow", () => {
       localizationEngine: new FaultLocalizationEngine(defaultProductPolicies),
       deadSensorDetector: new DeadSensorDetector(),
       scheduledOutageFilter: new ScheduledOutageFilter(defaultProductPolicies),
-      scheduledOutageProvider: new ScheduledOutageClient(networkRepository),
+      scheduledOutageProvider: noScheduledOutages,
       faultTicketStore: ticketRepository,
       publisher: { publish() {} },
     });

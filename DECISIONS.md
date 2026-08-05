@@ -655,3 +655,35 @@ Approved:
 
 Rationale:
 These clarify previously ambiguous public WebSocket behavior without changing ownership or architecture.
+
+---
+
+### D-023 — Operator Dashboard Presentation Boundaries
+
+**Status:** Accepted
+
+## Decision
+
+The operator dashboard consumes REST as its authoritative read model and treats
+WebSocket messages solely as refresh notifications. Its map fetches the selected
+fault's DT-scoped pole state and topology rather than eagerly loading the entire
+subdivision. Recorded, inferred, and fallback topology remain visually distinct;
+fallback is represented as a DT area rather than span-precise location.
+
+## Reason
+
+This keeps the first operator view responsive while preserving the documented
+uncertainty of incomplete topology. It also prevents client state from becoming
+an alternate source of truth when live notifications are missed.
+
+## Alternatives Considered
+
+- Eagerly load and render all pole states on first page load.
+- Treat WebSocket delivery as the client data authority.
+- Render fallback results as exact spans.
+
+## Why Rejected
+
+The full subdivision is unnecessary for the selected incident view and adds
+avoidable client work. WebSocket has no durable replay contract. Span-precise
+fallback rendering would conceal localization uncertainty from operators.

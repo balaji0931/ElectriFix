@@ -901,6 +901,47 @@ Phase 14 established real-time event delivery over WebSocket while preserving th
 
 ---
 
+# Session 19 — Operator Dashboard
+
+## Goal
+
+Build a reviewer-facing operator console that makes the existing fault,
+topology, evidence, ticket, simulator, REST, and WebSocket contracts usable
+without moving business decisions into the client.
+
+## Delegated to AI
+
+- React application shell and operational dashboard layout.
+- Typed REST client and React Query cache integration.
+- Leaflet/OpenStreetMap incident map.
+- Fault evidence, confidence, ticket action, and simulator components.
+- WebSocket notification integration with REST refetch and polling fallback.
+- Component, hook, API-client, build, lint, and visual smoke verification.
+
+## Human Review
+
+The implementation was constrained to presentation ownership. The review
+confirmed that:
+
+- REST remains the authoritative source of truth.
+- WebSocket events only invalidate/refetch client data and are never replayed.
+- Ticket controls recommend the next action but rely on backend lifecycle
+  validation and surface `409` responses.
+- Recorded, inferred, and fallback topology are visibly distinct, with fallback
+  never rendered as an exact span.
+- Null AI summaries and unavailable evidence values remain explicit to the
+  operator.
+- Simulator controls invoke only documented REST operations.
+
+## Outcome
+
+Phase 15 provides a responsive incident console with DT-scoped map reads,
+operator evidence, ticket actions, simulator controls, and resilient live-data
+refreshing. The client remains presentation-only and introduces no business or
+domain behavior.
+
+---
+
 # Examples of AI Output That Was Rejected
 
 ## Example 1

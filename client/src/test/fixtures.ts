@@ -1,0 +1,52 @@
+import type { Fault, Ticket } from "../lib/types";
+
+export const faultFixture: Fault = {
+  fault_id: "fault-1",
+  fault_type: "span",
+  dt_id: "DT-001",
+  feeder_id: "FEEDER-001",
+  lat: 12.9716,
+  lon: 77.5946,
+  pincode: "560001",
+  affected_pole_count: 4,
+  confidence_level: "HIGH",
+  topology_source: "RECORDED",
+  status: "active",
+  span_pole_a: "P-001",
+  span_pole_b: "P-002",
+  ai_summary: null,
+  detected_at: "2026-08-05T10:00:00.000Z",
+  resolved_at: null,
+  evidence: {
+    last_live_pole: "P-001",
+    first_dark_pole: "P-002",
+    fault_span: ["P-001", "P-002"],
+    affected_poles: ["P-002", "P-003", "P-004", "P-005"],
+    affected_pole_count: 4,
+    topology_source: "RECORDED",
+    confidence_level: "HIGH",
+    confidence_reasons: [
+      { factor: "Recorded topology", positive: true, detail: "Path is known." },
+    ],
+    coordinates: { lat: 12.9716, lon: 77.5946 },
+    pincode: "560001",
+    suppressed_sensors: [],
+  },
+};
+
+export const ticketFixture: Ticket = {
+  ticket_id: "ticket-1",
+  fault_id: faultFixture.fault_id,
+  status: "detected",
+  assigned_crew: null,
+  operator_notes: null,
+  rejection_count: 0,
+  rejection_reason: null,
+  detected_at: "2026-08-05T10:00:00.000Z",
+  acknowledged_at: null,
+  crew_assigned_at: null,
+  resolved_at: null,
+  verified_at: null,
+  closed_at: null,
+  fault: faultFixture,
+};
