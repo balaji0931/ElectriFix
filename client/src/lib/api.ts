@@ -56,7 +56,7 @@ export const api = {
   ticket: (ticketId: string) => request<Ticket>(`/tickets/${ticketId}`),
   poleStates: (dtId?: string) =>
     allPages<PoleState>(
-      `/poles/states${dtId ? `?dt_id=${encodeURIComponent(dtId)}` : ""}`,
+      `/poles/states${dtId ? `?dtId=${encodeURIComponent(dtId)}` : ""}`,
     ),
   dts: () => request<{ data: DistributionTransformer[] }>("/network/dts"),
   topology: (dtId: string) =>

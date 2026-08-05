@@ -4,6 +4,7 @@ import type { StartupSnapshot } from "../src/infrastructure/db/bootstrap.js";
 import { FaultInjector } from "../src/simulator/fault-injector.js";
 import { NetworkGenerator } from "../src/simulator/network-generator.js";
 import { NoiseGenerator } from "../src/simulator/noise-generator.js";
+import { RepairExecutor } from "../src/simulator/repair-executor.js";
 import { TelemetryProducer } from "../src/simulator/telemetry-producer.js";
 import { NetworkGraph } from "../src/domain/topology/network-graph.js";
 
@@ -89,6 +90,29 @@ describe("simulator engine", () => {
       boot_counter: 1,
       seq: 1,
     });
+  });
+
+  it("repairs only poles with installed devices", () => {
+    const base = fixtureSnapshot();
+    const snapshot = {
+      ...base,
+      poles: [
+        ...base.poles,
+        { poleId: "P-5", deviceId: null, dtId: "D-1", feederId: "F-1" },
+      ],
+    } as StartupSnapshot;
+    const repair = new RepairExecutor(new TelemetryProducer(snapshot));
+
+    const telemetry = repair.repair(
+      {
+        faultId: "fault-1",
+        evidence: { affected_poles: ["P-1", "P-5"] },
+      } as never,
+      now,
+    );
+
+    expect(telemetry).toHaveLength(2);
+    expect(telemetry.map((item) => item.event.pole_id)).toEqual(["P-1", "P-1"]);
   });
 
   it("selects the same default noise target and produces complete repeated scenarios", () => {

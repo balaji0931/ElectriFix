@@ -17,7 +17,7 @@ export class RepairExecutor {
     }
     return Object.freeze(
       evidence.affected_poles.flatMap((poleId) =>
-        typeof poleId === "string"
+        typeof poleId === "string" && this.telemetryProducer.hasDevice(poleId)
           ? this.telemetryProducer.bootAndRestore(poleId, now)
           : [],
       ),

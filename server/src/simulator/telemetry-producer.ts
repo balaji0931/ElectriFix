@@ -54,6 +54,10 @@ export class TelemetryProducer {
     });
   }
 
+  hasDevice(poleId: string): boolean {
+    return this.polesById.get(poleId)?.deviceId !== null && this.polesById.has(poleId);
+  }
+
   staleBefore(event: GeneratedTelemetry): GeneratedTelemetry {
     return Object.freeze({
       event: { ...event.event, seq: Math.max(0, event.event.seq - 1) },

@@ -32,10 +32,10 @@ describe("api", () => {
 
     expect(poles).toHaveLength(2);
     expect(fetchMock.mock.calls[0]?.[0]).toBe(
-      "/api/poles/states?dt_id=DT-001&limit=200",
+      "/api/poles/states?dtId=DT-001&limit=200",
     );
     expect(fetchMock.mock.calls[1]?.[0]).toBe(
-      "/api/poles/states?dt_id=DT-001&limit=200&cursor=next",
+      "/api/poles/states?dtId=DT-001&limit=200&cursor=next",
     );
   });
 });
